@@ -345,7 +345,16 @@ function renderWidget() {
 }
 
 function currentWidgetSession(snap) {
-  const agentId = new URL(window.location.href).searchParams.get('agentId');
+  const params = new URL(window.location.href).searchParams;
+  const sessionPath = params.get('sessionPath');
+  if (sessionPath) {
+    const known = (snap.agents || [])
+      .flatMap(agent => [agent.lastSession, ...(agent.recentSessions || [])])
+      .find(session => samePath(session?.path, sessionPath));
+    return known || { path: sessionPath, title: compactPath(sessionPath) };
+  }
+
+  const agentId = params.get('agentId');
   const agent = snap.agents.find(a => a.id === agentId)
     || snap.agents.find(a => a.isCurrent)
     || snap.agents.find(a => a.isPrimary)
