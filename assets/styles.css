@@ -94,9 +94,9 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 
 .agentAvatar { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; position: relative; overflow: hidden; border: 1px solid var(--obs-line); background: var(--obs-accent-light); color: var(--obs-text-light); font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0; }
 .agentAvatar.big { width: 58px; height: 58px; font-size: 22px; }
-.agentAvatar.mini { width: 22px; height: 22px; font-size: 11px; }
 .agentAvatar.subagent { width: 68px; height: 68px; font-size: 23px; }
 .agentAvatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.agentAvatar.mini { width: 30px; height: 30px; font-size: 12px; }
 .agentAvatar::after { content: ""; position: absolute; right: 0; bottom: 0; width: 9px; height: 9px; border-radius: 999px; border: 2px solid var(--obs-card); background: var(--obs-muted); z-index: 1; }
 .agentAvatar.big::after, .agentAvatar.subagent::after { width: 12px; height: 12px; }
 .agentAvatar.mini::after { width: 6px; height: 6px; border-width: 1px; }
@@ -114,13 +114,17 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .loadingOrb.small { width: 38px; height: 38px; margin: 20px auto 10px; }
 
 .widget { padding: 14px; min-height: 260px; background: var(--obs-bg); }
-.widget header, .widget footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.scoreRing { width: 112px; height: 112px; margin: 16px auto; display: grid; place-items: center; border-radius: 999px; border: 1px solid currentColor; color: var(--obs-ok); background: color-mix(in srgb, currentColor 10%, transparent); box-shadow: inset 0 0 26px color-mix(in srgb, currentColor 10%, transparent); }
-.scoreRing.warn { color: var(--obs-warn); background: color-mix(in srgb, var(--obs-warn) 13%, transparent); }
-.scoreRing.bad { color: var(--obs-bad); background: color-mix(in srgb, var(--obs-bad) 12%, transparent); }
-.scoreRing span { font-size: 34px; font-weight: 900; line-height: 1; }
-.scoreRing small { color: var(--obs-muted); margin-top: -26px; }
-.widget footer { margin-top: 12px; color: var(--obs-muted); font-size: 12px; }
+.widget header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.widget header strong { display: block; }
+.widget header small { display: block; color: var(--obs-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.widgetStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.widgetStats span { border: 1px solid var(--obs-line); border-radius: 999px; padding: 4px 6px; text-align: center; color: var(--obs-muted); background: var(--obs-overlay-subtle); font-size: 11px; }
+.widgetSubagentList { display: grid; gap: 8px; }
+.widgetSubagentCard { display: grid; grid-template-columns: auto 1fr; gap: 9px; align-items: center; border: 1px solid var(--obs-line); border-radius: 14px; padding: 9px; background: var(--obs-overlay-subtle); }
+.widgetSubagentCard > div { min-width: 0; }
+.widgetSubagentCard strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.widgetSubagentCard span { display: block; color: var(--obs-muted); font-size: 11px; }
+.widgetSubagentCard small { display: block; color: var(--obs-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @keyframes pulse { 50% { transform: scale(1.04); opacity: .72; } }
 

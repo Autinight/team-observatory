@@ -19,6 +19,8 @@ const I18N = {
     subagentInspector: 'Subagent Inspector',
     noSubagent: 'No subagent selected.',
     noSubagents: 'No subagent runs. The backstage is quiet.',
+    noWidgetSubagents: 'No subagent runs in this session.',
+    noCurrentSession: 'No current session.',
     blackboxSignals: 'Blackbox Signals',
     agents: 'Agents',
     agentContext: 'Agent Context',
@@ -73,6 +75,8 @@ const I18N = {
     subagentInspector: 'Subagent 检查器',
     noSubagent: '未选择 subagent。',
     noSubagents: '暂无 subagent 运行，后台很安静。',
+    noWidgetSubagents: '当前会话暂无 subagent。',
+    noCurrentSession: '没有当前会话。',
     blackboxSignals: '黑箱信号',
     agents: 'Agent',
     agentContext: 'Agent 上下文',
@@ -281,18 +285,55 @@ function renderWidget() {
   if (state.loading && !snap) return `<main class="widget"><div class="loadingOrb small"></div><p class="muted">${t('observing')}</p></main>`;
   if (state.error && !snap) return `<main class="widget"><b>${t('offline')}</b><button data-action="refresh">${t('retry')}</button></main>`;
   if (!snap) return '';
-  const stats = subagentStats(snap.subagents || []);
+  const currentSession = currentWidgetSession(snap);
+  const subagents = currentSession
+    ? (snap.subagents || []).filter(task => samePath(task.parentSessionPath, currentSession.path))
+    : [];
+  const stats = subagentStats(subagents);
   return `
-    <main class="widget">
-      <header><strong>${t('subagents')}</strong><button data-action="refresh">↻</button></header>
-      <div class="scoreRing ${stats.stale || stats.failed ? 'warn' : 'ok'}"><span>${stats.active}</span><small>${t('running')}</small></div>
-      <footer>
-        <span>${stats.stale} ${t('stale')}</span>
-        <span>${stats.failed} ${t('failed')}</span>
+    <main class="widget subagentWidget">
+      <header>
+        <div><strong>${t('subagents')}</strong><small>${esc(currentSession?.title || t('noCurrentSession'))}</small></div>
+        <button data-action="refresh">↻</button>
+      </header>
+      <div class="widgetStats">
+        <span>${stats.active} ${t('running')}</span>
         <span>${stats.completed} ${t('completed')}</span>
-      </footer>
+        <span>${stats.failed} ${t('failed')}</span>
+      </div>
+      <div class="widgetSubagentList">
+        ${subagents.slice(0, 8).map(widgetSubagentCard).join('') || `<p class="muted">${t('noWidgetSubagents')}</p>`}
+      </div>
     </main>
   `;
+}
+
+function currentWidgetSession(snap) {
+  const agentId = new URL(window.location.href).searchParams.get('agentId');
+  const agent = snap.agents.find(a => a.id === agentId)
+    || snap.agents.find(a => a.isCurrent)
+    || snap.agents.find(a => a.isPrimary)
+    || snap.agents[0];
+  const session = agent?.lastSession || agent?.recentSessions?.[0] || null;
+  return session?.path ? session : null;
+}
+
+function widgetSubagentCard(task) {
+  const agent = subagentDisplayAgent(task);
+  const observed = observedSubagentStatus(task);
+  return `<div class="widgetSubagentCard ${esc(observed)}">
+    ${agentAvatar(agent, 'mini')}
+    <div>
+      <strong>${esc(agent.name || agent.id)}</strong>
+      <span>${esc(statusLabel(observed))} · ${esc(timeAgo(task.updatedAt || task.createdAt))}</span>
+      <small>${esc(task.summary || task.taskId)}</small>
+    </div>
+  </div>`;
+}
+
+function samePath(a, b) {
+  if (!a || !b) return false;
+  return String(a).replace(/\\/g, '/').toLowerCase() === String(b).replace(/\\/g, '/').toLowerCase();
 }
 
 function metric(label, value, suffix = '') {
