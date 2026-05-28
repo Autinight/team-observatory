@@ -43,6 +43,9 @@ const I18N = {
     executor: 'Executor',
     status: 'Status',
     task: 'Task',
+    preview: 'Preview',
+    viewDetails: 'View details',
+    hideDetails: 'Hide details',
     taskId: 'Task ID',
     parent: 'Parent',
     created: 'Created',
@@ -94,6 +97,9 @@ const I18N = {
     executor: '执行者',
     status: '状态',
     task: '任务',
+    preview: '预览',
+    viewDetails: '查看详情',
+    hideDetails: '收起详情',
     taskId: '任务 ID',
     parent: '父会话',
     created: '创建',
@@ -113,6 +119,7 @@ const I18N = {
 const state = {
   snapshot: null,
   selectedSubagentId: null,
+  expandedDetailTaskId: null,
   loading: true,
   error: null,
   lastRefresh: null,
@@ -346,7 +353,7 @@ function renderSubagentInspector(task) {
         <p>${esc(agent.name || agent.id)} · ${esc(statusLabel(observed))}</p>
       </div>
     </div>
-    <div class="inspectorTask"><strong>${esc(title)}</strong></div>
+    ${detailPreview(task, title)}
     <div class="timeline">
       ${timelineRow(t('created'), task.createdAt)}
       ${timelineRow(t('updated'), task.updatedAt)}
@@ -362,6 +369,19 @@ function renderSubagentInspector(task) {
       ${task.reason ? kv(t('reason'), task.reason) : kv(t('reason'), t('noReason'))}
     </div>
   `;
+}
+
+function detailPreview(task, text) {
+  const value = String(text || task.taskId || '');
+  const expanded = state.expandedDetailTaskId === task.taskId;
+  const isLong = value.length > 180 || value.includes('\n');
+  return `<div class="inspectorTask ${expanded ? 'expanded' : ''}">
+    <div class="inspectorTaskHead">
+      <span>${t('preview')}</span>
+      ${isLong ? `<button data-action="toggleDetails" data-task-id="${esc(task.taskId)}">${expanded ? t('hideDetails') : t('viewDetails')}</button>` : ''}
+    </div>
+    ${expanded ? `<pre class="detailText">${esc(value)}</pre>` : `<p class="previewText">${esc(value)}</p>`}
+  </div>`;
 }
 
 function timelineRow(label, value) {
@@ -466,7 +486,8 @@ function bindActions() {
     el.addEventListener('click', async () => {
       const action = el.dataset.action;
       if (action === 'refresh') refresh();
-      if (action === 'selectSubagent') { state.selectedSubagentId = el.dataset.taskId; render(); }
+      if (action === 'selectSubagent') { state.selectedSubagentId = el.dataset.taskId; state.expandedDetailTaskId = null; render(); }
+      if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
       if (action === 'setLang') setLang(el.dataset.lang);
     });
   });

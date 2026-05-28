@@ -79,6 +79,10 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .inspectorHead h2 { margin: 0; }
 .inspectorHead p { margin: 2px 0 0; color: var(--obs-muted); }
 .inspectorTask { border: 1px solid var(--obs-line); border-radius: 16px; padding: 12px; background: var(--obs-overlay-subtle); margin-bottom: 14px; }
+.inspectorTaskHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--obs-muted); font-size: 12px; }
+.inspectorTaskHead button { padding: 3px 8px; border-radius: 999px; font-size: 12px; }
+.previewText { margin: 0; color: var(--obs-text); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+.detailText { margin: 0; max-height: 360px; overflow: auto; color: var(--obs-text); white-space: pre-wrap; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 10px; border-radius: 12px; background: var(--obs-overlay-subtle); border: 1px solid var(--obs-line); }
 .timeline { display: grid; gap: 2px; padding: 2px 0 12px; margin-bottom: 10px; border-bottom: 1px solid var(--obs-line); }
 .timelineRow { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; padding: 5px 0; }
 .timelineRow > span { width: 9px; height: 9px; border-radius: 99px; margin-top: 6px; background: var(--obs-accent); box-shadow: 0 0 0 4px var(--obs-accent-light); }
