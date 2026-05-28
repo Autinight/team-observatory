@@ -356,7 +356,7 @@ function renderSubagentInspector(task) {
       ${kv(t('requested'), task.requestedAgentName || task.requestedAgentId || t('unknown'))}
       ${kv(t('status'), statusLabel(observed))}
       ${kv(t('duration'), durationLabel(task))}
-      ${kv(t('parent'), compactPath(task.parentSessionPath) || t('noParent'))}
+      ${kv(t('parent'), task.parentSessionTitle || compactPath(task.parentSessionPath) || t('noParent'))}
       ${kv(t('taskId'), task.taskId)}
       ${task.reason ? kv(t('reason'), task.reason) : kv(t('reason'), t('noReason'))}
     </div>
