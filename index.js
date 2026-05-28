@@ -49,7 +49,6 @@ function isRelevantEvent(event) {
     type === "deferred_result" ||
     type === "token_usage" ||
     type === "llm_usage" ||
-    type === "plugin_ui_changed" ||
     type === "activity_update" ||
     type === "block_update" ||
     type === "session_created" ||

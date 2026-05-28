@@ -122,12 +122,15 @@ const I18N = {
 
 const state = {
   snapshot: null,
+  snapshotSignature: '',
   selectedSubagentId: null,
   expandedDetailTaskId: null,
   loading: true,
   error: null,
   lastRefresh: null,
   refreshTimer: null,
+  lastResizeHeight: 0,
+  readyPosted: false,
   refreshIntervalMs: 5000,
   isRefreshing: false,
   refreshQueued: false,
@@ -183,11 +186,19 @@ async function refresh() {
     return;
   }
   state.isRefreshing = true;
+  let shouldRender = false;
   try {
-    state.loading = !state.snapshot;
+    const wasInitialLoad = !state.snapshot;
+    const hadError = !!state.error;
+    state.loading = wasInitialLoad;
     state.error = null;
-    render();
-    state.snapshot = await apiJson(pluginPath('/api/snapshot'));
+    if (wasInitialLoad || hadError) render();
+
+    const nextSnapshot = await apiJson(pluginPath('/api/snapshot'));
+    const nextSignature = snapshotRenderSignature(nextSnapshot);
+    shouldRender = wasInitialLoad || hadError || nextSignature !== state.snapshotSignature;
+    state.snapshot = nextSnapshot;
+    state.snapshotSignature = nextSignature;
     state.lastRefresh = Date.now();
     if (state.snapshot?.config?.refreshIntervalMs) {
       state.refreshIntervalMs = state.snapshot.config.refreshIntervalMs;
@@ -195,18 +206,45 @@ async function refresh() {
     const subagents = state.snapshot.subagents || [];
     if (subagents.length && !subagents.some(task => task.taskId === state.selectedSubagentId)) {
       state.selectedSubagentId = subagents[0].taskId;
+      shouldRender = true;
     }
   } catch (err) {
     state.error = err.message || String(err);
+    shouldRender = true;
   } finally {
     state.loading = false;
     state.isRefreshing = false;
-    render();
+    if (shouldRender) render();
     if (state.refreshQueued) {
       state.refreshQueued = false;
       setTimeout(() => refresh(), 0);
     }
   }
+}
+
+function snapshotRenderSignature(snap) {
+  if (!snap) return '';
+  return JSON.stringify({
+    agents: (snap.agents || []).map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      status: agent.status,
+      lastSession: agent.lastSession ? { path: agent.lastSession.path, title: agent.lastSession.title } : null,
+    })),
+    subagents: (snap.subagents || []).map(task => ({
+      taskId: task.taskId,
+      status: observedSubagentStatus(task),
+      updatedAt: task.updatedAt,
+      completedAt: task.completedAt,
+      summary: task.summary,
+      reason: task.reason,
+      parentSessionPath: task.parentSessionPath,
+      parentSessionTitle: task.parentSessionTitle,
+      executorAgentId: task.executorAgentId,
+      requestedAgentId: task.requestedAgentId,
+    })),
+    config: snap.config ? { refreshIntervalMs: snap.config.refreshIntervalMs } : null,
+  });
 }
 
 function connectEvents() {
@@ -421,7 +459,7 @@ function agentAvatar(agent, size = '') {
   const src = agent.id && agent.id !== 'unknown' ? agentAvatarUrl(agent.id) : null;
   return `<span class="agentAvatar ${size} ${esc(agent.status || '')}" aria-hidden="true">
     <span class="avatarFallback">${esc(initial)}</span>
-    ${src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+    ${src ? `<img src="${esc(src)}" alt="" loading="eager" decoding="async" onerror="this.remove()">` : ''}
   </span>`;
 }
 
@@ -502,8 +540,14 @@ function bindActions() {
 
 function tryResize() {
   const height = Math.min(window.innerHeight || 900, Math.max(260, document.documentElement.scrollHeight));
-  window.parent?.postMessage?.({ type: 'resize-request', payload: { height } }, '*');
-  window.parent?.postMessage?.({ type: 'ready' }, '*');
+  if (Math.abs(height - (state.lastResizeHeight || 0)) > 2) {
+    state.lastResizeHeight = height;
+    window.parent?.postMessage?.({ type: 'resize-request', payload: { height } }, '*');
+  }
+  if (!state.readyPosted) {
+    state.readyPosted = true;
+    window.parent?.postMessage?.({ type: 'ready' }, '*');
+  }
 }
 
 function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(Math.round(n)); }
