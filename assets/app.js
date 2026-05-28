@@ -3,7 +3,7 @@ const surface = root?.dataset.surface || document.body.dataset.surface || 'dashb
 
 const LANG_KEY = 'team-observatory.lang';
 const DEFAULT_LANG = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
-const STALE_AFTER_MS = 10 * 60 * 1000;
+const DEFAULT_STALE_AFTER_MS = 10 * 60 * 1000;
 
 const I18N = {
   en: {
@@ -118,6 +118,8 @@ const state = {
   lastRefresh: null,
   refreshTimer: null,
   refreshIntervalMs: 5000,
+  isRefreshing: false,
+  refreshQueued: false,
   lang: loadLang(),
 };
 
@@ -165,12 +167,20 @@ function pluginPath(path) {
 }
 
 async function refresh() {
+  if (state.isRefreshing) {
+    state.refreshQueued = true;
+    return;
+  }
+  state.isRefreshing = true;
   try {
     state.loading = !state.snapshot;
     state.error = null;
     render();
     state.snapshot = await apiJson(pluginPath('/api/snapshot'));
     state.lastRefresh = Date.now();
+    if (state.snapshot?.config?.refreshIntervalMs) {
+      state.refreshIntervalMs = state.snapshot.config.refreshIntervalMs;
+    }
     const subagents = state.snapshot.subagents || [];
     if (subagents.length && !subagents.some(task => task.taskId === state.selectedSubagentId)) {
       state.selectedSubagentId = subagents[0].taskId;
@@ -179,7 +189,12 @@ async function refresh() {
     state.error = err.message || String(err);
   } finally {
     state.loading = false;
+    state.isRefreshing = false;
     render();
+    if (state.refreshQueued) {
+      state.refreshQueued = false;
+      setTimeout(() => refresh(), 0);
+    }
   }
 }
 
@@ -402,7 +417,7 @@ function subagentStats(tasks) {
 
 function observedSubagentStatus(task) {
   const status = String(task?.status || 'unknown');
-  if (['running', 'pending', 'blocked', 'recovering'].includes(status) && lastUpdateAgeMs(task) > STALE_AFTER_MS) {
+  if (['running', 'pending', 'blocked', 'recovering'].includes(status) && lastUpdateAgeMs(task) > staleThresholdMs()) {
     return 'stale';
   }
   return status;
@@ -466,17 +481,20 @@ function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed
 function timeAgo(value) { const t0 = new Date(value || 0).getTime(); if (!t0) return t('unknown'); const s = Math.max(0, Math.round((Date.now() - t0)/1000)); if (s < 60) return t('secondsAgo', { n: s }); const m = Math.round(s/60); return m < 60 ? t('minutesAgo', { n: m }) : t('hoursAgo', { n: Math.round(m/60) }); }
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+function staleThresholdMs() {
+  const minutes = Number(state.snapshot?.config?.staleAfterMinutes);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : DEFAULT_STALE_AFTER_MS;
+}
+
 function scheduleRefresh() {
   const ms = Math.max(2000, Math.min(60000, state.refreshIntervalMs || 5000));
   state.refreshIntervalMs = ms;
-  if (state.refreshTimer) clearInterval(state.refreshTimer);
-  state.refreshTimer = setInterval(refresh, ms);
+  if (state.refreshTimer) clearTimeout(state.refreshTimer);
+  state.refreshTimer = setTimeout(async () => {
+    await refresh();
+    scheduleRefresh();
+  }, ms);
 }
 
-refresh().then(() => {
-  if (state.snapshot?.config?.refreshIntervalMs) {
-    state.refreshIntervalMs = state.snapshot.config.refreshIntervalMs;
-  }
-  scheduleRefresh();
-});
+refresh().then(() => scheduleRefresh());
 connectEvents();
