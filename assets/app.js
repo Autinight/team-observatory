@@ -241,7 +241,7 @@ function renderDashboard() {
       <section class="gridBottom">
         <div class="card">
           <div class="cardHead"><h2>${t('subagentRuns')}</h2><span class="pill">${snap.summary.runningSubagentCount} ${t('running')}</span></div>
-          ${taskTable(snap.subagents, true)}
+          ${subagentGrid(snap.subagents)}
         </div>
         <div class="card">
           <div class="cardHead"><h2>${t('alerts')}</h2><span class="pill ${alerts.length ? 'warn' : 'ok'}">${alerts.length}</span></div>
@@ -268,10 +268,10 @@ function languageSwitch() {
 
 function agentAvatar(agent, size = '') {
   const initial = avatarInitial(agent);
-  const src = agentAvatarUrl(agent.id);
+  const src = agent.id && agent.id !== 'unknown' ? agentAvatarUrl(agent.id) : null;
   return `<span class="agentAvatar ${size} ${esc(agent.status || '')}" aria-hidden="true">
     <span class="avatarFallback">${esc(initial)}</span>
-    <img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">
+    ${src ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
   </span>`;
 }
 
@@ -349,6 +349,33 @@ function taskTable(tasks) {
     <div><strong>${esc(task.summary || task.taskId)}</strong><small>${esc(task.taskId)} · ${esc(task.executorAgentName || task.executorAgentId || task.requestedAgentName || task.type)}</small></div>
     <b class="statusText ${task.status}">${esc(task.status)}</b>
   </div>`).join('')}</div>`;
+}
+
+function subagentGrid(tasks) {
+  const visible = (tasks || []).slice(0, 8);
+  if (!visible.length) return `<p class="muted">${t('noTasks')}</p>`;
+  return `<div class="subagentGrid">${visible.map(subagentCard).join('')}</div>`;
+}
+
+function subagentCard(task) {
+  const agent = subagentDisplayAgent(task);
+  const title = task.summary || task.taskId;
+  const age = timeAgo(task.updatedAt || task.createdAt);
+  return `<article class="subagentCard ${esc(task.status)}">
+    ${agentAvatar(agent, 'subagent')}
+    <div class="subagentBody">
+      <strong>${esc(agent.name || agent.id)}</strong>
+      <span class="subagentStatus ${esc(task.status)}">${esc(task.status)}</span>
+      <small>${esc(title)}</small>
+      <em>${esc(age)}</em>
+    </div>
+  </article>`;
+}
+
+function subagentDisplayAgent(task) {
+  const id = task.executorAgentId || task.requestedAgentId || task.agentId || 'unknown';
+  const name = task.executorAgentName || task.requestedAgentName || id;
+  return { id, name, status: task.status };
 }
 
 function alertView(alert) {

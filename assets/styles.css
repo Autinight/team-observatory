@@ -283,6 +283,12 @@ h3 {
   font-size: 11px;
 }
 
+.agentAvatar.subagent {
+  width: 62px;
+  height: 62px;
+  font-size: 22px;
+}
+
 .agentAvatar img {
   position: absolute;
   inset: 0;
@@ -304,7 +310,8 @@ h3 {
   z-index: 1;
 }
 
-.agentAvatar.big::after {
+.agentAvatar.big::after,
+.agentAvatar.subagent::after {
   width: 12px;
   height: 12px;
 }
@@ -456,6 +463,81 @@ h3 {
 .dot.recovering { background: var(--obs-warn); color: var(--obs-warn); }
 .dot.completed,
 .dot.resolved { background: var(--obs-ok); color: var(--obs-ok); }
+
+.subagentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 12px;
+}
+
+.subagentCard {
+  min-height: 184px;
+  border: 1px solid var(--obs-line);
+  border-radius: 18px;
+  padding: 14px 12px;
+  background: var(--obs-overlay-subtle);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  align-items: start;
+  gap: 12px;
+  text-align: center;
+}
+
+.subagentCard:hover {
+  background: var(--obs-overlay-light);
+}
+
+.subagentBody {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.subagentBody strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subagentBody small {
+  color: var(--obs-muted);
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.subagentBody em {
+  color: var(--obs-muted);
+  font-style: normal;
+  font-size: 11px;
+}
+
+.subagentStatus {
+  border: 1px solid var(--obs-line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: var(--obs-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  background: var(--obs-overlay-subtle);
+}
+
+.subagentStatus.running,
+.subagentStatus.pending,
+.subagentStatus.blocked,
+.subagentStatus.recovering { color: var(--obs-warn); }
+.subagentStatus.completed,
+.subagentStatus.resolved { color: var(--obs-ok); }
+.subagentStatus.failed,
+.subagentStatus.aborted,
+.subagentStatus.canceled { color: var(--obs-bad); }
 
 .statusText {
   font-size: 12px;
