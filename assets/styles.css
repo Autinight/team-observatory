@@ -71,6 +71,52 @@ button:focus-visible {
   margin-bottom: 18px;
 }
 
+.heroIntro {
+  min-width: 0;
+}
+
+.heroTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.langSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--obs-line);
+  border-radius: 999px;
+  background: var(--obs-overlay-subtle);
+  color: var(--obs-muted);
+  flex-shrink: 0;
+}
+
+.langSwitch button {
+  min-width: 34px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.langSwitch button:hover {
+  background: var(--obs-overlay-light);
+  border-color: transparent;
+}
+
+.langSwitch button.active {
+  background: var(--obs-card);
+  color: var(--obs-text);
+  box-shadow: 0 1px 4px var(--obs-shadow);
+}
+
 .hero h1 {
   margin: 0;
   font-size: clamp(32px, 5vw, 58px);
