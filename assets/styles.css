@@ -43,7 +43,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .langSwitch button.active { background: var(--obs-card); color: var(--obs-text); box-shadow: 0 1px 4px var(--obs-shadow); }
 
 .heroStats { display: grid; grid-template-columns: repeat(4, minmax(78px, 1fr)); gap: 10px; min-width: 360px; width: 100%; }
-.metric, .card, .alert { border: 1px solid var(--obs-line); background: var(--obs-glass); box-shadow: 0 12px 34px var(--obs-shadow); }
+.metric, .card { border: 1px solid var(--obs-line); background: var(--obs-glass); box-shadow: 0 12px 34px var(--obs-shadow); }
 .metric { border-radius: 18px; padding: 13px 14px; }
 .metric span { display: block; color: var(--obs-muted); font-size: 12px; }
 .metric strong { display: inline-block; font-size: 26px; letter-spacing: -.04em; margin-top: 3px; }
@@ -54,8 +54,6 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .cardHead p { margin: 2px 0 0; }
 
 .subagentLayout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 16px; align-items: start; }
-.contextGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin-top: 16px; }
-.usageCard { margin-top: 16px; }
 
 .subagentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 12px; }
 .emptySubagents { margin: 18px 0 4px; }
@@ -94,11 +92,6 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .kv strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .inspectorEmpty p { margin: 8px 0 0; }
 
-.agentStrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.agentContextItem { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--obs-line); border-radius: 14px; background: var(--obs-overlay-subtle); }
-.agentContextItem strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.agentContextItem small { color: var(--obs-muted); }
-
 .agentAvatar { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; position: relative; overflow: hidden; border: 1px solid var(--obs-line); background: var(--obs-accent-light); color: var(--obs-text-light); font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0; }
 .agentAvatar.big { width: 58px; height: 58px; font-size: 22px; }
 .agentAvatar.mini { width: 22px; height: 22px; font-size: 11px; }
@@ -111,17 +104,6 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .agentAvatar.busy::after, .agentAvatar.stale::after, .agentAvatar.pending::after, .agentAvatar.blocked::after, .agentAvatar.recovering::after { background: var(--obs-warn); }
 .agentAvatar.error::after, .agentAvatar.failed::after, .agentAvatar.aborted::after, .agentAvatar.canceled::after { background: var(--obs-bad); }
 .avatarFallback { line-height: 1; }
-
-.alertList { display: grid; gap: 10px; }
-.alert { border-radius: 16px; padding: 12px; box-shadow: none; }
-.alert p { margin: 4px 0 0; color: var(--obs-muted); }
-.alert.critical { border-color: color-mix(in srgb, var(--obs-bad) 45%, var(--obs-line)); }
-.alert.warning { border-color: color-mix(in srgb, var(--obs-warn) 45%, var(--obs-line)); }
-
-.usageBars { display: grid; gap: 12px; }
-.usageRow { display: grid; grid-template-columns: 140px 1fr 80px; gap: 12px; align-items: center; }
-.usageRow div { height: 11px; background: var(--obs-overlay-light); border-radius: 99px; overflow: hidden; }
-.usageRow i { display: block; height: 100%; background: linear-gradient(90deg, var(--obs-accent), var(--obs-accent-hover)); border-radius: inherit; }
 
 .pill { border: 1px solid var(--obs-line); border-radius: 99px; padding: 4px 9px; color: var(--obs-muted); font-size: 12px; background: var(--obs-overlay-subtle); }
 .pill.ok { color: var(--obs-ok); }
@@ -143,7 +125,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 @keyframes pulse { 50% { transform: scale(1.04); opacity: .72; } }
 
 @media (max-width: 980px) {
-  .hero, .subagentLayout, .contextGrid { grid-template-columns: 1fr; display: grid; }
+  .hero, .subagentLayout { grid-template-columns: 1fr; display: grid; }
   .heroAside { min-width: 0; width: 100%; justify-items: end; }
   .heroStats { min-width: 0; }
   .inspectorCard { position: static; }
@@ -153,6 +135,5 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
   .shell { padding: 16px; }
   .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .subagentGrid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
-  .usageRow { grid-template-columns: 90px 1fr 64px; }
   .kv { grid-template-columns: 1fr; gap: 2px; }
 }

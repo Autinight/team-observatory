@@ -12,7 +12,7 @@ const I18N = {
     retry: 'Retry',
     eyebrow: 'Subagent Observatory',
     title: 'Team Observatory',
-    subtitle: 'Watch subagents as first-class runtime objects: lifecycle, ownership, stale runs, failures, and result flow.',
+    subtitle: 'Monitor the state of subagents that exist in currently managed sessions.',
     running: 'running',
     refresh: 'Refresh',
     subagentRuns: 'Subagent Runs',
@@ -66,7 +66,7 @@ const I18N = {
     retry: '重试',
     eyebrow: 'Subagent 观测',
     title: 'Team Observatory',
-    subtitle: '把 subagent 当作一等运行对象监看：生命周期、归属、卡住、失败与结果流。',
+    subtitle: '监控当前管理的会话中存在的 subagent 的状态。',
     running: '运行中',
     refresh: '刷新',
     subagentRuns: 'Subagent 运行',
@@ -230,7 +230,6 @@ function renderDashboard() {
 
   const subagents = snap.subagents || [];
   const selected = subagents.find(task => task.taskId === state.selectedSubagentId) || subagents[0] || null;
-  const alerts = snap.alerts || [];
   const stats = subagentStats(subagents);
 
   return `
@@ -247,7 +246,7 @@ function renderDashboard() {
             ${metric(t('active'), stats.active)}
             ${metric(t('stale'), stats.stale)}
             ${metric(t('failed'), stats.failed)}
-            ${metric(t('completed'), stats.completed, t('last24h'))}
+            ${metric(t('completed'), stats.completed)}
           </div>
         </div>
       </header>
@@ -257,7 +256,7 @@ function renderDashboard() {
       <section class="subagentLayout">
         <div class="card subagentMainCard">
           <div class="cardHead">
-            <div><h2>${t('subagentRuns')}</h2><p class="muted">${t('blackboxSignals')}</p></div>
+            <div><h2>${t('subagentRuns')}</h2></div>
             <button data-action="refresh">${t('refresh')}</button>
           </div>
           ${subagentGrid(subagents)}
@@ -265,22 +264,6 @@ function renderDashboard() {
         <aside class="card inspectorCard">
           ${renderSubagentInspector(selected)}
         </aside>
-      </section>
-
-      <section class="contextGrid">
-        <div class="card agentContextCard">
-          <div class="cardHead"><h2>${t('agentContext')}</h2><span class="pill">${snap.summary.agentCount}</span></div>
-          <div class="agentStrip">${snap.agents.map(agentContextCard).join('')}</div>
-        </div>
-        <div class="card">
-          <div class="cardHead"><h2>${t('alerts')}</h2><span class="pill ${alerts.length ? 'warn' : 'ok'}">${alerts.length}</span></div>
-          <div class="alertList">${alerts.slice(0, 8).map(alertView).join('') || `<p class="muted">${t('quiet')}</p>`}</div>
-        </div>
-      </section>
-
-      <section class="card usageCard">
-        <div class="cardHead"><h2>${t('usagePressure')}</h2><span class="muted">${t('last24h')}</span></div>
-        <div class="usageBars">${(snap.usage.byAgent || []).filter(u => u.agentId !== 'unknown').map(usageBar).join('') || `<p class="muted">${t('noUsage')}</p>`}</div>
       </section>
     </main>
   `;
@@ -392,13 +375,6 @@ function kv(label, value) {
   return `<div class="kv"><span>${esc(label)}</span><strong title="${esc(value)}">${esc(value)}</strong></div>`;
 }
 
-function agentContextCard(agent) {
-  return `<div class="agentContextItem">
-    ${agentAvatar(agent, 'mini')}
-    <div><strong>${esc(agent.name)}</strong><small>${esc(agent.status)} · ${agent.health.score}</small></div>
-  </div>`;
-}
-
 function agentAvatar(agent, size = '') {
   const initial = avatarInitial(agent);
   const src = agent.id && agent.id !== 'unknown' ? agentAvatarUrl(agent.id) : null;
@@ -469,16 +445,6 @@ function compactPath(value) {
   if (!value) return '';
   const parts = String(value).replace(/\\/g, '/').split('/').filter(Boolean);
   return parts.slice(-2).join('/');
-}
-
-function alertView(alert) {
-  return `<div class="alert ${alert.severity}"><strong>${esc(alert.title)}</strong><p>${esc(alert.message)}</p></div>`;
-}
-
-function usageBar(usage) {
-  const max = Math.max(...(state.snapshot?.usage.byAgent || []).map(u => u.totalTokens || 0), 1);
-  const width = Math.max(2, Math.round((usage.totalTokens || 0) / max * 100));
-  return `<div class="usageRow"><span>${esc(usage.agentId)}</span><div><i style="width:${width}%"></i></div><b>${formatTokens(usage.totalTokens)}</b></div>`;
 }
 
 function bindActions() {
