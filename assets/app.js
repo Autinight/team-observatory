@@ -266,6 +266,24 @@ function languageSwitch() {
   </div>`;
 }
 
+function agentAvatar(agent, size = '') {
+  const initial = avatarInitial(agent);
+  const src = agentAvatarUrl(agent.id);
+  return `<span class="agentAvatar ${size} ${esc(agent.status || '')}" aria-hidden="true">
+    <span class="avatarFallback">${esc(initial)}</span>
+    <img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">
+  </span>`;
+}
+
+function agentAvatarUrl(agentId) {
+  return apiUrl(`/api/agents/${encodeURIComponent(agentId)}/avatar`);
+}
+
+function avatarInitial(agent) {
+  const text = String(agent.name || agent.id || '?').trim();
+  return Array.from(text)[0]?.toUpperCase?.() || '?';
+}
+
 function renderWidget() {
   const snap = state.snapshot;
   if (state.loading && !snap) return `<main class="widget"><div class="loadingOrb small"></div><p class="muted">${t('observing')}</p></main>`;
@@ -276,7 +294,7 @@ function renderWidget() {
       <header><strong>${t('team')}</strong><button data-action="refresh">↻</button></header>
       <div class="scoreRing ${scoreClass(snap.summary.healthScore)}"><span>${snap.summary.healthScore}</span><small>${t('healthScore')}</small></div>
       <div class="miniAgents">
-        ${snap.agents.slice(0, 5).map(a => `<div class="miniAgent"><span class="dot ${a.status}"></span><span>${esc(a.name)}</span><b>${a.health.score}</b></div>`).join('')}
+        ${snap.agents.slice(0, 5).map(a => `<div class="miniAgent">${agentAvatar(a, 'mini')}<span>${esc(a.name)}</span><b>${a.health.score}</b></div>`).join('')}
       </div>
       <footer>
         <span>${snap.summary.runningTaskCount} ${t('tasks')}</span>
@@ -294,7 +312,7 @@ function metric(label, value, suffix = '') {
 function agentCard(agent) {
   const selected = agent.id === state.selectedAgentId ? ' selected' : '';
   return `<button class="agentCard${selected}" data-action="selectAgent" data-agent-id="${esc(agent.id)}">
-    <div class="statusOrbit ${agent.status}"><span></span></div>
+    ${agentAvatar(agent)}
     <div><strong>${esc(agent.name)}</strong><small>${esc(agent.id)}</small></div>
     <div class="agentScore ${scoreClass(agent.health.score)}">${agent.health.score}</div>
   </button>`;
@@ -303,7 +321,7 @@ function agentCard(agent) {
 function renderAgentDetail(agent) {
   return `
     <div class="detailHero">
-      <div class="statusOrbit big ${agent.status}"><span></span></div>
+      ${agentAvatar(agent, 'big')}
       <div><h2>${esc(agent.name)}</h2><p>${esc(agent.status)} · ${agent.isCurrent ? t('current') : agent.isPrimary ? t('primary') : t('teamMember')}</p></div>
       <div class="agentScore large ${scoreClass(agent.health.score)}">${agent.health.score}</div>
     </div>
