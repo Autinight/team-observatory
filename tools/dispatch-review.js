@@ -1,4 +1,4 @@
-import { buildDispatchPrompt } from "../lib/team-snapshot.js";
+import { buildDispatchPrompt, readRuntimeConfig } from "../lib/team-snapshot.js";
 
 export const name = "dispatch_review";
 export const description = "Build a structured prompt for the current Hana agent to dispatch a subagent reviewer for team/task diagnosis. This tool does not directly start subagents; it returns the prompt and can send it into the current session when sessionPath is available.";
@@ -26,8 +26,26 @@ export const parameters = {
 
 export async function execute(input = {}, toolCtx) {
   const result = await buildDispatchPrompt(toolCtx, input);
+  const config = readRuntimeConfig(toolCtx);
   let sent = false;
   let sendError = null;
+
+  if (!config.enableAgentDispatch) {
+    return {
+      content: [{
+        type: "text",
+        text: `Team Observatory dispatch prompt (agent dispatch is disabled in settings):\n\n${result.prompt}`,
+      }],
+      details: {
+        sent: false,
+        reason: "agent dispatch is disabled in plugin config",
+        reviewer: result.reviewer,
+        targetAgent: result.targetAgent,
+        prompt: result.prompt,
+        snapshotTs: result.snapshot?.ts || null,
+      },
+    };
+  }
 
   if (input.sendToCurrentSession === true && toolCtx.sessionPath && toolCtx.bus?.hasHandler?.("session:send")) {
     try {

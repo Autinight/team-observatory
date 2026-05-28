@@ -8,6 +8,9 @@ const state = {
   error: null,
   lastRefresh: null,
   dispatchPrompt: null,
+  dispatchResult: null,
+  refreshTimer: null,
+  refreshIntervalMs: 5000,
 };
 
 function apiUrl(path) {
@@ -122,7 +125,7 @@ function renderDashboard() {
         <div class="usageBars">${(snap.usage.byAgent || []).filter(u => u.agentId !== 'unknown').map(usageBar).join('') || '<p class="muted">No usage records.</p>'}</div>
       </section>
 
-      ${state.dispatchPrompt ? `<section class="card promptCard"><div class="cardHead"><h2>Dispatch / Diagnosis</h2><button data-action="clearPrompt">Close</button></div><pre>${esc(state.dispatchPrompt)}</pre></section>` : ''}
+      ${state.dispatchPrompt ? `<section class="card promptCard"><div class="cardHead"><h2>${state.dispatchResult?.sent === true ? 'Review dispatched' : state.dispatchResult?.sent === false ? 'Review prompt (not sent)' : 'Diagnosis'}</h2><button data-action="clearPrompt">Close</button></div>${state.dispatchResult?.reason ? `<p class="muted">${esc(state.dispatchResult.reason)}</p>` : ''}<pre>${esc(state.dispatchPrompt)}</pre></section>` : ''}
     </main>
   `;
 }
@@ -177,7 +180,7 @@ function renderAgentDetail(agent) {
     <div class="recommendations"><h3>Recommendations</h3>${(agent.recommendations || []).map(x => `<p>• ${esc(x)}</p>`).join('')}</div>
     <div class="actions">
       <button data-action="diagnose" data-agent-id="${esc(agent.id)}">Diagnose</button>
-      <button data-action="dispatch" data-agent-id="${esc(agent.id)}">Dispatch review</button>
+      <button data-action="dispatch" data-agent-id="${esc(agent.id)}">Build review prompt</button>
       <button data-action="copyStatus" data-agent-id="${esc(agent.id)}">Copy status</button>
     </div>
     <div class="recentSessions"><h3>Recent sessions</h3>${(agent.recentSessions || []).slice(0, 5).map(session => `<div class="sessionRow"><strong>${esc(session.title || 'Untitled')}</strong><span>${timeAgo(session.modified)}</span></div>`).join('') || '<p class="muted">No sessions.</p>'}</div>
@@ -211,7 +214,7 @@ function bindActions() {
       const agentId = el.dataset.agentId;
       if (action === 'refresh') refresh();
       if (action === 'selectAgent') { state.selectedAgentId = agentId; render(); }
-      if (action === 'clearPrompt') { state.dispatchPrompt = null; render(); }
+      if (action === 'clearPrompt') { state.dispatchPrompt = null; state.dispatchResult = null; render(); }
       if (action === 'copyStatus') copyAgentStatus(agentId);
       if (action === 'diagnose') runDiagnose(agentId);
       if (action === 'dispatch') runDispatch(agentId);
@@ -230,6 +233,7 @@ async function runDiagnose(agentId) {
   try {
     const res = await apiJson(pluginPath('/api/actions/diagnose'), { method: 'POST', body: JSON.stringify({ agentId }) });
     state.dispatchPrompt = res.text || JSON.stringify(res, null, 2);
+    state.dispatchResult = { sent: false, reason: null };
     render();
   } catch (err) { state.error = err.message; render(); }
 }
@@ -238,6 +242,7 @@ async function runDispatch(agentId) {
   try {
     const res = await apiJson(pluginPath('/api/actions/dispatch-review'), { method: 'POST', body: JSON.stringify({ agentId }) });
     state.dispatchPrompt = res.prompt || JSON.stringify(res, null, 2);
+    state.dispatchResult = { sent: !!res.sent, reason: res.reason || null };
     render();
   } catch (err) { state.error = err.message; render(); }
 }
@@ -253,6 +258,17 @@ function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed
 function timeAgo(value) { const t = new Date(value || 0).getTime(); if (!t) return 'unknown'; const m = Math.max(0, Math.round((Date.now() - t)/60000)); return m < 60 ? `${m}m ago` : `${Math.round(m/60)}h ago`; }
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-refresh();
+function scheduleRefresh() {
+  const ms = Math.max(2000, Math.min(60000, state.refreshIntervalMs || 5000));
+  state.refreshIntervalMs = ms;
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
+  state.refreshTimer = setInterval(refresh, ms);
+}
+
+refresh().then(() => {
+  if (state.snapshot?.config?.refreshIntervalMs) {
+    state.refreshIntervalMs = state.snapshot.config.refreshIntervalMs;
+  }
+  scheduleRefresh();
+});
 connectEvents();
-setInterval(refresh, 5000);
