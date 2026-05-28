@@ -76,23 +76,24 @@ button:focus-visible {
 }
 
 .heroTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 2px;
 }
 
 .langSwitch {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--obs-line);
   border-radius: 999px;
-  background: var(--obs-overlay-subtle);
+  background: var(--obs-glass);
   color: var(--obs-muted);
   flex-shrink: 0;
+  box-shadow: 0 4px 16px var(--obs-shadow);
 }
 
 .langSwitch button {

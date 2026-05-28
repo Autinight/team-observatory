@@ -209,11 +209,11 @@ function renderDashboard() {
 
   return `
     <main class="shell dashboard">
+      ${languageSwitch()}
       <header class="hero">
         <div class="heroIntro">
           <div class="heroTop">
             <div class="eyebrow">${t('eyebrow')}</div>
-            ${languageSwitch()}
           </div>
           <h1>${t('title')}</h1>
           <p>${t('subtitle')}</p>
