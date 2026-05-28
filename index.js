@@ -1,4 +1,4 @@
-export default class TeamObservatoryPlugin {
+export default class SubagentObservatoryPlugin {
   async onload() {
     const ctx = this.ctx;
     const runtime = {
@@ -34,11 +34,11 @@ export default class TeamObservatoryPlugin {
       runtime.subscribers.clear();
     });
 
-    ctx.log.info("Team Observatory loaded");
+    ctx.log.info("Subagent Observatory loaded");
   }
 
   async onunload() {
-    this.ctx?.log?.info?.("Team Observatory unloaded");
+    this.ctx?.log?.info?.("Subagent Observatory unloaded");
   }
 }
 

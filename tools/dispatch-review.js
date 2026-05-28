@@ -1,7 +1,7 @@
 import { buildDispatchPrompt, readRuntimeConfig } from "../lib/team-snapshot.js";
 
 export const name = "dispatch_review";
-export const description = "Build a structured prompt for the current Hana agent to dispatch a subagent reviewer for team/task diagnosis. This tool does not directly start subagents; it returns the prompt and can send it into the current session when sessionPath is available.";
+export const description = "Build a structured prompt for the current Hana agent to dispatch a subagent reviewer for subagent/task diagnosis. This tool does not directly start subagents; it returns the prompt and can send it into the current session when sessionPath is available.";
 export const parameters = {
   type: "object",
   properties: {
@@ -34,7 +34,7 @@ export async function execute(input = {}, toolCtx) {
     return {
       content: [{
         type: "text",
-        text: `Team Observatory dispatch prompt (agent dispatch is disabled in settings):\n\n${result.prompt}`,
+        text: `Subagent Observatory dispatch prompt (agent dispatch is disabled in settings):\n\n${result.prompt}`,
       }],
       details: {
         sent: false,
@@ -63,8 +63,8 @@ export async function execute(input = {}, toolCtx) {
     content: [{
       type: "text",
       text: sent
-        ? "Team Observatory dispatch prompt sent into the current session."
-        : `Team Observatory dispatch prompt:\n\n${result.prompt}`,
+        ? "Subagent Observatory dispatch prompt sent into the current session."
+        : `Subagent Observatory dispatch prompt:\n\n${result.prompt}`,
     }],
     details: {
       sent,

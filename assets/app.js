@@ -1,7 +1,7 @@
 const root = document.getElementById('app');
 const surface = root?.dataset.surface || document.body.dataset.surface || 'dashboard';
 
-const LANG_KEY = 'team-observatory.lang';
+const LANG_KEY = 'subagent-observatory.lang';
 const DEFAULT_LANG = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
 const DEFAULT_STALE_AFTER_MS = 10 * 60 * 1000;
 
@@ -11,7 +11,7 @@ const I18N = {
     offlineTitle: 'Observatory offline',
     retry: 'Retry',
     eyebrow: 'Subagent Observatory',
-    title: 'Team Observatory',
+    title: 'Subagent Observatory',
     subtitle: 'Monitor the state of subagents that exist in currently managed sessions.',
     running: 'running',
     refresh: 'Refresh',
@@ -25,13 +25,13 @@ const I18N = {
     agents: 'Agents',
     agentContext: 'Agent Context',
     alerts: 'Alerts',
-    quiet: 'No alerts. The team is quiet.',
+    quiet: 'No alerts. Subagent runs are quiet.',
     usagePressure: 'Usage Pressure',
     last24h: 'last 24h',
     noUsage: 'No usage records.',
     observing: 'Observing...',
     offline: 'Offline',
-    team: 'Team',
+    team: 'Subagents',
     healthScore: 'health',
     tasks: 'Tasks',
     subagents: 'subagents',
@@ -67,7 +67,7 @@ const I18N = {
     offlineTitle: '观测面板离线',
     retry: '重试',
     eyebrow: 'Subagent 观测',
-    title: 'Team Observatory',
+    title: 'Subagent Observatory',
     subtitle: '监控当前管理的会话中存在的 subagent 的状态。',
     running: '运行中',
     refresh: '刷新',
@@ -87,7 +87,7 @@ const I18N = {
     noUsage: '没有用量记录。',
     observing: '观测中...',
     offline: '离线',
-    team: '团队',
+    team: 'Subagent',
     healthScore: '健康分',
     tasks: '任务',
     subagents: 'Subagent',

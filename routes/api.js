@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.dirname(__dirname);
 const ASSETS_DIR = path.join(PLUGIN_ROOT, "assets");
 
-export default function registerTeamObservatoryRoutes(app, ctx) {
+export default function registerSubagentObservatoryRoutes(app, ctx) {
   app.get("/dashboard", (c) => c.html(renderShell(c, ctx, "dashboard")));
   app.get("/widget", (c) => c.html(renderShell(c, ctx, "widget")));
 
@@ -119,7 +119,7 @@ function serveAsset(c, fileName, contentType) {
 function renderShell(c, ctx, surface) {
   const theme = c.req.query("hana-theme") || "inherit";
   const hanaCss = c.req.query("hana-css") || "";
-  const title = surface === "widget" ? "Team" : "Team Observatory";
+  const title = surface === "widget" ? "Subagents" : "Subagent Observatory";
   const cssHref = assetUrl(c, ctx, "/assets/styles.css");
   const jsSrc = assetUrl(c, ctx, "/assets/app.js");
 

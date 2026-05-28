@@ -1,7 +1,7 @@
 import { diagnoseAgent } from "../lib/team-snapshot.js";
 
 export const name = "diagnose_agent";
-export const description = "Diagnose one Hana agent's current team-observatory status: sessions, background tasks, subagents, usage pressure, and recommendations.";
+export const description = "Diagnose one Hana agent's current subagent-observatory status: sessions, background tasks, subagents, usage pressure, and recommendations.";
 export const parameters = {
   type: "object",
   properties: {

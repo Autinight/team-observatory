@@ -1,9 +1,9 @@
 {
   "manifestVersion": 1,
   "id": "team-observatory",
-  "name": "Team Observatory",
+  "name": "Subagent Observatory",
   "version": "0.1.0",
-  "description": "A visual observatory for Hana agent teams, sessions, background tasks, subagent runs, and usage pressure.",
+  "description": "A visual observatory for subagent runs across currently managed Hana sessions.",
   "minAppVersion": "0.158.0",
   "trust": "full-access",
   "permissions": ["usage.read", "task.read", "session.read", "session.write"],
@@ -13,12 +13,12 @@
   },
   "contributes": {
     "page": {
-      "title": "Team Observatory",
+      "title": "Subagent Observatory",
       "route": "/dashboard",
       "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12h3M17 12h3M12 4v3M12 17v3\"/><path d=\"M6.8 6.8l2.1 2.1M15.1 15.1l2.1 2.1M17.2 6.8l-2.1 2.1M8.9 15.1l-2.1 2.1\"/></svg>"
     },
     "widget": {
-      "title": "Team",
+      "title": "Subagents",
       "route": "/widget",
       "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 18c1.8-3 4.5-4.5 8-4.5s6.2 1.5 8 4.5\"/><circle cx=\"12\" cy=\"8\" r=\"3\"/></svg>"
     },
@@ -56,7 +56,7 @@
         "id": "diagnose-tool",
         "steps": [
           { "invokeTool": { "name": "diagnose_agent", "input": { "agentId": "current" } } },
-          { "expectToolText": "Team Observatory" }
+          { "expectToolText": "Subagent Observatory" }
         ]
       },
       {
