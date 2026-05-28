@@ -67,6 +67,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .subagentBody { min-width: 0; display: grid; justify-items: center; gap: 5px; width: 100%; }
 .subagentBody strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subagentBody small { color: var(--obs-muted); max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+.subagentBody .subagentParentTitle { color: var(--obs-text-light); -webkit-line-clamp: 1; font-weight: 600; }
 .subagentBody em { color: var(--obs-muted); font-style: normal; font-size: 11px; }
 .subagentStatus { border: 1px solid var(--obs-line); border-radius: 999px; padding: 2px 8px; color: var(--obs-muted); font-size: 11px; line-height: 1.35; background: var(--obs-overlay-subtle); }
 .subagentStatus.running, .subagentStatus.pending, .subagentStatus.blocked, .subagentStatus.recovering, .subagentStatus.stale { color: var(--obs-warn); }

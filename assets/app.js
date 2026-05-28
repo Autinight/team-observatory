@@ -326,6 +326,7 @@ function subagentCard(task) {
     <div class="subagentBody">
       <strong>${esc(agent.name || agent.id)}</strong>
       <span class="subagentStatus ${esc(observed)}">${esc(statusLabel(observed))}</span>
+      <small class="subagentParentTitle">${esc(task.parentSessionTitle || compactPath(task.parentSessionPath) || t('noParent'))}</small>
       <small>${esc(title)}</small>
       <em>${esc(age)}</em>
     </div>
