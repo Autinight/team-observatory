@@ -3,113 +3,116 @@ const surface = root?.dataset.surface || document.body.dataset.surface || 'dashb
 
 const LANG_KEY = 'team-observatory.lang';
 const DEFAULT_LANG = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+const STALE_AFTER_MS = 10 * 60 * 1000;
 
 const I18N = {
   en: {
     opening: 'Opening observatory...',
     offlineTitle: 'Observatory offline',
     retry: 'Retry',
-    eyebrow: 'Hana Agent Team',
+    eyebrow: 'Subagent Observatory',
     title: 'Team Observatory',
-    subtitle: 'Observe agent load, subagent operations, task failures, and usage pressure without touching core runtime.',
-    health: 'Health',
-    agents: 'Agents',
-    tasks: 'Tasks',
-    tokens: 'Tokens',
+    subtitle: 'Watch subagents as first-class runtime objects: lifecycle, ownership, stale runs, failures, and result flow.',
     running: 'running',
     refresh: 'Refresh',
-    noAgent: 'No agent selected.',
     subagentRuns: 'Subagent Runs',
+    subagentInspector: 'Subagent Inspector',
+    noSubagent: 'No subagent selected.',
+    noSubagents: 'No subagent runs. The backstage is quiet.',
+    blackboxSignals: 'Blackbox Signals',
+    agents: 'Agents',
+    agentContext: 'Agent Context',
     alerts: 'Alerts',
     quiet: 'No alerts. The team is quiet.',
     usagePressure: 'Usage Pressure',
     last24h: 'last 24h',
-    outOf100: '/100',
-    hours24: '24h',
-    healthScore: 'health',
     noUsage: 'No usage records.',
-    reviewDispatched: 'Review dispatched',
-    reviewPromptNotSent: 'Review prompt (not sent)',
-    diagnosis: 'Diagnosis',
-    close: 'Close',
     observing: 'Observing...',
     offline: 'Offline',
     team: 'Team',
-    current: 'current',
-    primary: 'primary',
-    teamMember: 'team member',
-    sessions: 'Sessions',
-    active: 'active',
-    failed: 'Failed',
-    recommendations: 'Recommendations',
-    diagnose: 'Diagnose',
-    buildReviewPrompt: 'Build review prompt',
-    copyStatus: 'Copy status',
-    recentSessions: 'Recent sessions',
-    untitled: 'Untitled',
-    noSessions: 'No sessions.',
-    noTasks: 'No matching tasks.',
-    status: 'status',
+    healthScore: 'health',
+    tasks: 'Tasks',
     subagents: 'subagents',
+    tokens: 'Tokens',
+    total: 'Total',
+    stale: 'Stale',
+    failed: 'Failed',
+    completed: 'Completed',
+    active: 'Active',
+    requested: 'Requested',
+    executor: 'Executor',
+    status: 'Status',
+    task: 'Task',
+    taskId: 'Task ID',
+    parent: 'Parent',
+    created: 'Created',
+    updated: 'Updated',
+    completedAt: 'Completed',
+    duration: 'Duration',
+    reason: 'Reason',
+    noReason: 'No error reason.',
+    noParent: 'No parent session.',
     unknown: 'unknown',
     minutesAgo: '{n}m ago',
     hoursAgo: '{n}h ago',
+    secondsAgo: '{n}s ago',
   },
   zh: {
     opening: '正在打开观测面板...',
     offlineTitle: '观测面板离线',
     retry: '重试',
-    eyebrow: 'Hana Agent 团队',
+    eyebrow: 'Subagent 观测',
     title: 'Team Observatory',
-    subtitle: '观察 agent 负载、subagent 运行、任务失败和用量压力，不触碰核心运行时。',
-    health: '健康度',
-    agents: 'Agent',
-    tasks: '任务',
-    tokens: 'Token',
+    subtitle: '把 subagent 当作一等运行对象监看：生命周期、归属、卡住、失败与结果流。',
     running: '运行中',
     refresh: '刷新',
-    noAgent: '未选择 agent。',
     subagentRuns: 'Subagent 运行',
+    subagentInspector: 'Subagent 检查器',
+    noSubagent: '未选择 subagent。',
+    noSubagents: '暂无 subagent 运行，后台很安静。',
+    blackboxSignals: '黑箱信号',
+    agents: 'Agent',
+    agentContext: 'Agent 上下文',
     alerts: '提醒',
     quiet: '没有提醒，团队很安静。',
     usagePressure: '用量压力',
     last24h: '最近 24 小时',
-    outOf100: '分',
-    hours24: '24h',
-    healthScore: '健康分',
     noUsage: '没有用量记录。',
-    reviewDispatched: '审查已派发',
-    reviewPromptNotSent: '审查 prompt（未发送）',
-    diagnosis: '诊断',
-    close: '关闭',
     observing: '观测中...',
     offline: '离线',
     team: '团队',
-    current: '当前',
-    primary: '主 Agent',
-    teamMember: '团队成员',
-    sessions: '会话',
-    active: '活跃',
-    failed: '失败',
-    recommendations: '建议',
-    diagnose: '诊断',
-    buildReviewPrompt: '生成审查 prompt',
-    copyStatus: '复制状态',
-    recentSessions: '最近会话',
-    untitled: '未命名',
-    noSessions: '没有会话。',
-    noTasks: '没有匹配任务。',
-    status: '状态',
+    healthScore: '健康分',
+    tasks: '任务',
     subagents: 'Subagent',
+    tokens: 'Token',
+    total: '总数',
+    stale: '停滞',
+    failed: '失败',
+    completed: '完成',
+    active: '活跃',
+    requested: '请求目标',
+    executor: '执行者',
+    status: '状态',
+    task: '任务',
+    taskId: '任务 ID',
+    parent: '父会话',
+    created: '创建',
+    updated: '更新',
+    completedAt: '完成',
+    duration: '耗时',
+    reason: '原因',
+    noReason: '没有错误原因。',
+    noParent: '没有父会话。',
     unknown: '未知',
     minutesAgo: '{n} 分钟前',
     hoursAgo: '{n} 小时前',
+    secondsAgo: '{n} 秒前',
   },
 };
 
 const state = {
   snapshot: null,
-  selectedAgentId: null,
+  selectedSubagentId: null,
   loading: true,
   error: null,
   lastRefresh: null,
@@ -168,8 +171,9 @@ async function refresh() {
     render();
     state.snapshot = await apiJson(pluginPath('/api/snapshot'));
     state.lastRefresh = Date.now();
-    if (!state.selectedAgentId && state.snapshot.agents?.length) {
-      state.selectedAgentId = (state.snapshot.agents.find(a => a.isCurrent) || state.snapshot.agents[0]).id;
+    const subagents = state.snapshot.subagents || [];
+    if (subagents.length && !subagents.some(task => task.taskId === state.selectedSubagentId)) {
+      state.selectedSubagentId = subagents[0].taskId;
     }
   } catch (err) {
     state.error = err.message || String(err);
@@ -202,44 +206,49 @@ function renderDashboard() {
   if (state.error && !snap) return `<main class="shell"><section class="card danger"><h2>${t('offlineTitle')}</h2><p>${esc(state.error)}</p><button data-action="refresh">${t('retry')}</button></section></main>`;
   if (!snap) return '';
 
-  const selected = snap.agents.find(a => a.id === state.selectedAgentId) || snap.agents[0];
+  const subagents = snap.subagents || [];
+  const selected = subagents.find(task => task.taskId === state.selectedSubagentId) || subagents[0] || null;
   const alerts = snap.alerts || [];
+  const stats = subagentStats(subagents);
 
   return `
-    <main class="shell dashboard">
+    <main class="shell dashboard subagentFirst">
       <header class="hero">
         <div class="heroIntro">
-          <div class="heroTop">
-            <div class="eyebrow">${t('eyebrow')}</div>
-          </div>
+          <div class="heroTop"><div class="eyebrow">${t('eyebrow')}</div></div>
           <h1>${t('title')}</h1>
           <p>${t('subtitle')}</p>
         </div>
         <div class="heroAside">
           ${languageSwitch()}
-          <div class="heroStats">
-            ${metric(t('health'), `${snap.summary.healthScore}`, t('outOf100'))}
-            ${metric(t('agents'), snap.summary.agentCount)}
-            ${metric(t('tasks'), snap.summary.runningTaskCount, t('running'))}
-            ${metric(t('tokens'), formatTokens(snap.summary.token24h), t('hours24'))}
+          <div class="heroStats subagentStats">
+            ${metric(t('active'), stats.active)}
+            ${metric(t('stale'), stats.stale)}
+            ${metric(t('failed'), stats.failed)}
+            ${metric(t('completed'), stats.completed, t('last24h'))}
           </div>
         </div>
       </header>
 
       ${state.error ? `<div class="inlineError">${esc(state.error)}</div>` : ''}
 
-      <section class="gridTop">
-        <div class="card agentGridCard">
-          <div class="cardHead"><h2>${t('agents')}</h2><button data-action="refresh">${t('refresh')}</button></div>
-          <div class="agentGrid">${snap.agents.map(agentCard).join('')}</div>
+      <section class="subagentLayout">
+        <div class="card subagentMainCard">
+          <div class="cardHead">
+            <div><h2>${t('subagentRuns')}</h2><p class="muted">${t('blackboxSignals')}</p></div>
+            <button data-action="refresh">${t('refresh')}</button>
+          </div>
+          ${subagentGrid(subagents)}
         </div>
-        <div class="card detailCard">${selected ? renderAgentDetail(selected) : `<p class="muted">${t('noAgent')}</p>`}</div>
+        <aside class="card inspectorCard">
+          ${renderSubagentInspector(selected)}
+        </aside>
       </section>
 
-      <section class="gridBottom">
-        <div class="card">
-          <div class="cardHead"><h2>${t('subagentRuns')}</h2><span class="pill">${snap.summary.runningSubagentCount} ${t('running')}</span></div>
-          ${subagentGrid(snap.subagents)}
+      <section class="contextGrid">
+        <div class="card agentContextCard">
+          <div class="cardHead"><h2>${t('agentContext')}</h2><span class="pill">${snap.summary.agentCount}</span></div>
+          <div class="agentStrip">${snap.agents.map(agentContextCard).join('')}</div>
         </div>
         <div class="card">
           <div class="cardHead"><h2>${t('alerts')}</h2><span class="pill ${alerts.length ? 'warn' : 'ok'}">${alerts.length}</span></div>
@@ -262,6 +271,98 @@ function languageSwitch() {
   </div>`;
 }
 
+function renderWidget() {
+  const snap = state.snapshot;
+  if (state.loading && !snap) return `<main class="widget"><div class="loadingOrb small"></div><p class="muted">${t('observing')}</p></main>`;
+  if (state.error && !snap) return `<main class="widget"><b>${t('offline')}</b><button data-action="refresh">${t('retry')}</button></main>`;
+  if (!snap) return '';
+  const stats = subagentStats(snap.subagents || []);
+  return `
+    <main class="widget">
+      <header><strong>${t('subagents')}</strong><button data-action="refresh">↻</button></header>
+      <div class="scoreRing ${stats.stale || stats.failed ? 'warn' : 'ok'}"><span>${stats.active}</span><small>${t('running')}</small></div>
+      <footer>
+        <span>${stats.stale} ${t('stale')}</span>
+        <span>${stats.failed} ${t('failed')}</span>
+        <span>${stats.completed} ${t('completed')}</span>
+      </footer>
+    </main>
+  `;
+}
+
+function metric(label, value, suffix = '') {
+  return `<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong>${suffix ? `<em>${esc(suffix)}</em>` : ''}</div>`;
+}
+
+function subagentGrid(tasks) {
+  const visible = (tasks || []).slice(0, 12);
+  if (!visible.length) return `<p class="muted emptySubagents">${t('noSubagents')}</p>`;
+  return `<div class="subagentGrid">${visible.map(subagentCard).join('')}</div>`;
+}
+
+function subagentCard(task) {
+  const agent = subagentDisplayAgent(task);
+  const observed = observedSubagentStatus(task);
+  const title = task.summary || task.taskId;
+  const age = timeAgo(task.updatedAt || task.createdAt);
+  const selected = task.taskId === state.selectedSubagentId ? ' selected' : '';
+  return `<button class="subagentCard ${esc(observed)}${selected}" data-action="selectSubagent" data-task-id="${esc(task.taskId)}">
+    ${agentAvatar(agent, 'subagent')}
+    <div class="subagentBody">
+      <strong>${esc(agent.name || agent.id)}</strong>
+      <span class="subagentStatus ${esc(observed)}">${esc(statusLabel(observed))}</span>
+      <small>${esc(title)}</small>
+      <em>${esc(age)}</em>
+    </div>
+  </button>`;
+}
+
+function renderSubagentInspector(task) {
+  if (!task) return `<div class="inspectorEmpty"><h2>${t('subagentInspector')}</h2><p class="muted">${t('noSubagent')}</p></div>`;
+  const agent = subagentDisplayAgent(task);
+  const observed = observedSubagentStatus(task);
+  const title = task.summary || task.taskId;
+  return `
+    <div class="inspectorHead">
+      ${agentAvatar(agent, 'big')}
+      <div>
+        <h2>${t('subagentInspector')}</h2>
+        <p>${esc(agent.name || agent.id)} · ${esc(statusLabel(observed))}</p>
+      </div>
+    </div>
+    <div class="inspectorTask"><strong>${esc(title)}</strong></div>
+    <div class="timeline">
+      ${timelineRow(t('created'), task.createdAt)}
+      ${timelineRow(t('updated'), task.updatedAt)}
+      ${task.completedAt ? timelineRow(t('completedAt'), task.completedAt) : ''}
+    </div>
+    <div class="kvList">
+      ${kv(t('executor'), agent.name || agent.id)}
+      ${kv(t('requested'), task.requestedAgentName || task.requestedAgentId || t('unknown'))}
+      ${kv(t('status'), statusLabel(observed))}
+      ${kv(t('duration'), durationLabel(task))}
+      ${kv(t('parent'), compactPath(task.parentSessionPath) || t('noParent'))}
+      ${kv(t('taskId'), task.taskId)}
+      ${task.reason ? kv(t('reason'), task.reason) : kv(t('reason'), t('noReason'))}
+    </div>
+  `;
+}
+
+function timelineRow(label, value) {
+  return `<div class="timelineRow"><span></span><div><strong>${esc(label)}</strong><small>${esc(value ? timeAgo(value) : t('unknown'))}</small></div></div>`;
+}
+
+function kv(label, value) {
+  return `<div class="kv"><span>${esc(label)}</span><strong title="${esc(value)}">${esc(value)}</strong></div>`;
+}
+
+function agentContextCard(agent) {
+  return `<div class="agentContextItem">
+    ${agentAvatar(agent, 'mini')}
+    <div><strong>${esc(agent.name)}</strong><small>${esc(agent.status)} · ${agent.health.score}</small></div>
+  </div>`;
+}
+
 function agentAvatar(agent, size = '') {
   const initial = avatarInitial(agent);
   const src = agent.id && agent.id !== 'unknown' ? agentAvatarUrl(agent.id) : null;
@@ -280,92 +381,58 @@ function avatarInitial(agent) {
   return Array.from(text)[0]?.toUpperCase?.() || '?';
 }
 
-function renderWidget() {
-  const snap = state.snapshot;
-  if (state.loading && !snap) return `<main class="widget"><div class="loadingOrb small"></div><p class="muted">${t('observing')}</p></main>`;
-  if (state.error && !snap) return `<main class="widget"><b>${t('offline')}</b><button data-action="refresh">${t('retry')}</button></main>`;
-  if (!snap) return '';
-  return `
-    <main class="widget">
-      <header><strong>${t('team')}</strong><button data-action="refresh">↻</button></header>
-      <div class="scoreRing ${scoreClass(snap.summary.healthScore)}"><span>${snap.summary.healthScore}</span><small>${t('healthScore')}</small></div>
-      <div class="miniAgents">
-        ${snap.agents.slice(0, 5).map(a => `<div class="miniAgent">${agentAvatar(a, 'mini')}<span>${esc(a.name)}</span><b>${a.health.score}</b></div>`).join('')}
-      </div>
-      <footer>
-        <span>${snap.summary.runningTaskCount} ${t('tasks')}</span>
-        <span>${snap.summary.runningSubagentCount} ${t('subagents')}</span>
-        <span>${formatTokens(snap.summary.token24h)}</span>
-      </footer>
-    </main>
-  `;
-}
-
-function metric(label, value, suffix = '') {
-  return `<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong>${suffix ? `<em>${esc(suffix)}</em>` : ''}</div>`;
-}
-
-function agentCard(agent) {
-  const selected = agent.id === state.selectedAgentId ? ' selected' : '';
-  return `<button class="agentCard${selected}" data-action="selectAgent" data-agent-id="${esc(agent.id)}">
-    ${agentAvatar(agent)}
-    <div><strong>${esc(agent.name)}</strong><small>${esc(agent.id)}</small></div>
-    <div class="agentScore ${scoreClass(agent.health.score)}">${agent.health.score}</div>
-  </button>`;
-}
-
-function renderAgentDetail(agent) {
-  return `
-    <div class="detailHero">
-      ${agentAvatar(agent, 'big')}
-      <div><h2>${esc(agent.name)}</h2><p>${esc(agent.status)} · ${agent.isCurrent ? t('current') : agent.isPrimary ? t('primary') : t('teamMember')}</p></div>
-      <div class="agentScore large ${scoreClass(agent.health.score)}">${agent.health.score}</div>
-    </div>
-    <div class="detailMetrics">
-      ${metric(t('sessions'), agent.sessionCount)}
-      ${metric(t('tasks'), agent.activeTaskCount, t('active'))}
-      ${metric(t('failed'), agent.failedTaskCount)}
-      ${metric(t('tokens'), formatTokens(agent.usage24h.totalTokens))}
-    </div>
-    <div class="recentSessions"><h3>${t('recentSessions')}</h3>${(agent.recentSessions || []).slice(0, 5).map(session => `<div class="sessionRow"><strong>${esc(session.title || t('untitled'))}</strong><span>${timeAgo(session.modified)}</span></div>`).join('') || `<p class="muted">${t('noSessions')}</p>`}</div>
-  `;
-}
-
-function taskTable(tasks) {
-  const visible = (tasks || []).slice(0, 8);
-  if (!visible.length) return `<p class="muted">${t('noTasks')}</p>`;
-  return `<div class="taskTable">${visible.map(task => `<div class="taskRow">
-    <span class="dot ${task.status}"></span>
-    <div><strong>${esc(task.summary || task.taskId)}</strong><small>${esc(task.taskId)} · ${esc(task.executorAgentName || task.executorAgentId || task.requestedAgentName || task.type)}</small></div>
-    <b class="statusText ${task.status}">${esc(task.status)}</b>
-  </div>`).join('')}</div>`;
-}
-
-function subagentGrid(tasks) {
-  const visible = (tasks || []).slice(0, 8);
-  if (!visible.length) return `<p class="muted">${t('noTasks')}</p>`;
-  return `<div class="subagentGrid">${visible.map(subagentCard).join('')}</div>`;
-}
-
-function subagentCard(task) {
-  const agent = subagentDisplayAgent(task);
-  const title = task.summary || task.taskId;
-  const age = timeAgo(task.updatedAt || task.createdAt);
-  return `<article class="subagentCard ${esc(task.status)}">
-    ${agentAvatar(agent, 'subagent')}
-    <div class="subagentBody">
-      <strong>${esc(agent.name || agent.id)}</strong>
-      <span class="subagentStatus ${esc(task.status)}">${esc(task.status)}</span>
-      <small>${esc(title)}</small>
-      <em>${esc(age)}</em>
-    </div>
-  </article>`;
-}
-
 function subagentDisplayAgent(task) {
   const id = task.executorAgentId || task.requestedAgentId || task.agentId || 'unknown';
   const name = task.executorAgentName || task.requestedAgentName || id;
-  return { id, name, status: task.status };
+  return { id, name, status: observedSubagentStatus(task) };
+}
+
+function subagentStats(tasks) {
+  const stats = { total: 0, active: 0, stale: 0, failed: 0, completed: 0 };
+  for (const task of tasks || []) {
+    stats.total += 1;
+    const status = observedSubagentStatus(task);
+    if (['running', 'pending', 'blocked', 'recovering'].includes(status)) stats.active += 1;
+    if (status === 'stale') stats.stale += 1;
+    if (['failed', 'aborted', 'canceled'].includes(status)) stats.failed += 1;
+    if (['completed', 'resolved'].includes(status)) stats.completed += 1;
+  }
+  return stats;
+}
+
+function observedSubagentStatus(task) {
+  const status = String(task?.status || 'unknown');
+  if (['running', 'pending', 'blocked', 'recovering'].includes(status) && lastUpdateAgeMs(task) > STALE_AFTER_MS) {
+    return 'stale';
+  }
+  return status;
+}
+
+function lastUpdateAgeMs(task) {
+  const ts = new Date(task?.updatedAt || task?.createdAt || 0).getTime();
+  return ts ? Date.now() - ts : 0;
+}
+
+function statusLabel(status) {
+  if (status === 'stale') return t('stale');
+  if (status === 'failed') return t('failed');
+  if (status === 'completed' || status === 'resolved') return t('completed');
+  if (status === 'running') return t('running');
+  return status || t('unknown');
+}
+
+function durationLabel(task) {
+  const start = new Date(task?.createdAt || 0).getTime();
+  const end = new Date(task?.completedAt || task?.updatedAt || Date.now()).getTime();
+  if (!start || !end || end < start) return t('unknown');
+  const minutes = Math.max(0, Math.round((end - start) / 60000));
+  return minutes < 1 ? '<1m' : `${minutes}m`;
+}
+
+function compactPath(value) {
+  if (!value) return '';
+  const parts = String(value).replace(/\\/g, '/').split('/').filter(Boolean);
+  return parts.slice(-2).join('/');
 }
 
 function alertView(alert) {
@@ -382,9 +449,8 @@ function bindActions() {
   root.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', async () => {
       const action = el.dataset.action;
-      const agentId = el.dataset.agentId;
       if (action === 'refresh') refresh();
-      if (action === 'selectAgent') { state.selectedAgentId = agentId; render(); }
+      if (action === 'selectSubagent') { state.selectedSubagentId = el.dataset.taskId; render(); }
       if (action === 'setLang') setLang(el.dataset.lang);
     });
   });
@@ -396,9 +462,8 @@ function tryResize() {
   window.parent?.postMessage?.({ type: 'ready' }, '*');
 }
 
-function scoreClass(score) { return score >= 80 ? 'ok' : score >= 55 ? 'warn' : 'bad'; }
 function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(Math.round(n)); }
-function timeAgo(value) { const t0 = new Date(value || 0).getTime(); if (!t0) return t('unknown'); const m = Math.max(0, Math.round((Date.now() - t0)/60000)); return m < 60 ? t('minutesAgo', { n: m }) : t('hoursAgo', { n: Math.round(m/60) }); }
+function timeAgo(value) { const t0 = new Date(value || 0).getTime(); if (!t0) return t('unknown'); const s = Math.max(0, Math.round((Date.now() - t0)/1000)); if (s < 60) return t('secondsAgo', { n: s }); const m = Math.round(s/60); return m < 60 ? t('minutesAgo', { n: m }) : t('hoursAgo', { n: Math.round(m/60) }); }
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function scheduleRefresh() {
