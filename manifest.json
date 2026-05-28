@@ -1,0 +1,70 @@
+{
+  "manifestVersion": 1,
+  "id": "team-observatory",
+  "name": "Team Observatory",
+  "version": "0.1.0",
+  "description": "A visual observatory for Hana agent teams, sessions, background tasks, subagent runs, and usage pressure.",
+  "minAppVersion": "0.158.0",
+  "trust": "full-access",
+  "permissions": ["usage.read", "task.read", "session.read"],
+  "activationEvents": ["onStartup", "onPageOpen", "onWidgetOpen", "onToolCall:diagnose_agent", "onToolCall:dispatch_review"],
+  "ui": {
+    "hostCapabilities": ["clipboard.writeText"]
+  },
+  "contributes": {
+    "page": {
+      "title": "Team Observatory",
+      "route": "/dashboard",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4 12h3M17 12h3M12 4v3M12 17v3\"/><path d=\"M6.8 6.8l2.1 2.1M15.1 15.1l2.1 2.1M17.2 6.8l-2.1 2.1M8.9 15.1l-2.1 2.1\"/></svg>"
+    },
+    "widget": {
+      "title": "Team",
+      "route": "/widget",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 18c1.8-3 4.5-4.5 8-4.5s6.2 1.5 8 4.5\"/><circle cx=\"12\" cy=\"8\" r=\"3\"/></svg>"
+    },
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "refreshIntervalMs": {
+          "type": "number",
+          "title": "Refresh interval (ms)",
+          "default": 3000,
+          "minimum": 1000
+        },
+        "staleAfterMinutes": {
+          "type": "number",
+          "title": "Mark agent stale after minutes",
+          "default": 90,
+          "minimum": 5
+        },
+        "enableSse": {
+          "type": "boolean",
+          "title": "Enable live event stream",
+          "default": true
+        },
+        "enableAgentDispatch": {
+          "type": "boolean",
+          "title": "Allow dispatch prompts into current session",
+          "default": true
+        }
+      }
+    }
+  },
+  "dev": {
+    "scenarios": [
+      {
+        "id": "diagnose-tool",
+        "steps": [
+          { "invokeTool": { "name": "diagnose_agent", "input": { "agentId": "current" } } },
+          { "expectToolText": "Team Observatory" }
+        ]
+      },
+      {
+        "id": "open-dashboard",
+        "steps": [
+          { "openSurface": "/dashboard" }
+        ]
+      }
+    ]
+  }
+}
