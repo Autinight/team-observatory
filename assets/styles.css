@@ -79,21 +79,23 @@ button:focus-visible {
   margin-bottom: 2px;
 }
 
+.heroAside {
+  display: grid;
+  gap: 10px;
+  min-width: 300px;
+  justify-items: end;
+}
+
 .langSwitch {
-  position: fixed;
-  top: 18px;
-  right: 24px;
-  z-index: 10;
   display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--obs-line);
   border-radius: 999px;
-  background: var(--obs-glass);
+  background: var(--obs-overlay-subtle);
   color: var(--obs-muted);
   flex-shrink: 0;
-  box-shadow: 0 4px 16px var(--obs-shadow);
 }
 
 .langSwitch button {
@@ -144,6 +146,7 @@ button:focus-visible {
   grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 12px;
   min-width: 300px;
+  width: 100%;
 }
 
 .metric,
@@ -550,6 +553,7 @@ h3 {
     grid-template-columns: 1fr;
     display: grid;
   }
+  .heroAside { min-width: 0; width: 100%; justify-items: end; }
   .heroStats { min-width: 0; }
   .shell { padding: 16px; }
   .usageRow { grid-template-columns: 90px 1fr 64px; }

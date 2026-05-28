@@ -209,7 +209,6 @@ function renderDashboard() {
 
   return `
     <main class="shell dashboard">
-      ${languageSwitch()}
       <header class="hero">
         <div class="heroIntro">
           <div class="heroTop">
@@ -218,11 +217,14 @@ function renderDashboard() {
           <h1>${t('title')}</h1>
           <p>${t('subtitle')}</p>
         </div>
-        <div class="heroStats">
-          ${metric(t('health'), `${snap.summary.healthScore}`, t('outOf100'))}
-          ${metric(t('agents'), snap.summary.agentCount)}
-          ${metric(t('tasks'), snap.summary.runningTaskCount, t('running'))}
-          ${metric(t('tokens'), formatTokens(snap.summary.token24h), t('hours24'))}
+        <div class="heroAside">
+          ${languageSwitch()}
+          <div class="heroStats">
+            ${metric(t('health'), `${snap.summary.healthScore}`, t('outOf100'))}
+            ${metric(t('agents'), snap.summary.agentCount)}
+            ${metric(t('tasks'), snap.summary.runningTaskCount, t('running'))}
+            ${metric(t('tokens'), formatTokens(snap.summary.token24h), t('hours24'))}
+          </div>
         </div>
       </header>
 
