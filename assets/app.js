@@ -24,6 +24,9 @@ const I18N = {
     quiet: 'No alerts. The team is quiet.',
     usagePressure: 'Usage Pressure',
     last24h: 'last 24h',
+    outOf100: '/100',
+    hours24: '24h',
+    healthScore: 'health',
     noUsage: 'No usage records.',
     reviewDispatched: 'Review dispatched',
     reviewPromptNotSent: 'Review prompt (not sent)',
@@ -71,6 +74,9 @@ const I18N = {
     quiet: '没有提醒，团队很安静。',
     usagePressure: '用量压力',
     last24h: '最近 24 小时',
+    outOf100: '分',
+    hours24: '24h',
+    healthScore: '健康分',
     noUsage: '没有用量记录。',
     reviewDispatched: '审查已派发',
     reviewPromptNotSent: '审查 prompt（未发送）',
@@ -213,10 +219,10 @@ function renderDashboard() {
           <p>${t('subtitle')}</p>
         </div>
         <div class="heroStats">
-          ${metric(t('health'), `${snap.summary.healthScore}`, '/100')}
+          ${metric(t('health'), `${snap.summary.healthScore}`, t('outOf100'))}
           ${metric(t('agents'), snap.summary.agentCount)}
           ${metric(t('tasks'), snap.summary.runningTaskCount, t('running'))}
-          ${metric(t('tokens'), formatTokens(snap.summary.token24h), '24h')}
+          ${metric(t('tokens'), formatTokens(snap.summary.token24h), t('hours24'))}
         </div>
       </header>
 
@@ -266,7 +272,7 @@ function renderWidget() {
   return `
     <main class="widget">
       <header><strong>${t('team')}</strong><button data-action="refresh">↻</button></header>
-      <div class="scoreRing ${scoreClass(snap.summary.healthScore)}"><span>${snap.summary.healthScore}</span><small>${state.lang === 'zh' ? t('health') : 'health'}</small></div>
+      <div class="scoreRing ${scoreClass(snap.summary.healthScore)}"><span>${snap.summary.healthScore}</span><small>${t('healthScore')}</small></div>
       <div class="miniAgents">
         ${snap.agents.slice(0, 5).map(a => `<div class="miniAgent"><span class="dot ${a.status}"></span><span>${esc(a.name)}</span><b>${a.health.score}</b></div>`).join('')}
       </div>
@@ -354,7 +360,9 @@ function bindActions() {
 async function copyAgentStatus(agentId) {
   const agent = state.snapshot?.agents.find(a => a.id === agentId);
   if (!agent) return;
-  const text = `${agent.name}: ${agent.status}, health ${agent.health.score}/100, tasks ${agent.activeTaskCount}, failed ${agent.failedTaskCount}`;
+  const text = state.lang === 'zh'
+    ? `${agent.name}：${agent.status}，${t('healthScore')} ${agent.health.score}，${t('tasks')} ${agent.activeTaskCount}，${t('failed')} ${agent.failedTaskCount}`
+    : `${agent.name}: ${agent.status}, health ${agent.health.score}, tasks ${agent.activeTaskCount}, failed ${agent.failedTaskCount}`;
   await navigator.clipboard?.writeText?.(text).catch(() => {});
 }
 
