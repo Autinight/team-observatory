@@ -297,9 +297,9 @@ function renderWidget() {
         <button data-action="refresh">↻</button>
       </header>
       <div class="widgetStats">
-        <span>${stats.active} ${t('running')}</span>
-        <span>${stats.completed} ${t('completed')}</span>
-        <span>${stats.failed} ${t('failed')}</span>
+        <span class="running">${stats.active} ${t('running')}</span>
+        <span class="completed">${stats.completed} ${t('completed')}</span>
+        <span class="failed">${stats.failed} ${t('failed')}</span>
       </div>
       <div class="widgetSubagentList">
         ${subagents.slice(0, 8).map(widgetSubagentCard).join('') || `<p class="muted">${t('noWidgetSubagents')}</p>`}
