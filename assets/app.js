@@ -122,7 +122,6 @@ const I18N = {
 
 const state = {
   snapshot: null,
-  snapshotSignature: '',
   selectedSubagentId: null,
   expandedDetailTaskId: null,
   loading: true,
@@ -134,6 +133,8 @@ const state = {
   refreshIntervalMs: 5000,
   isRefreshing: false,
   refreshQueued: false,
+  avatarCache: new Map(),
+  avatarFetches: new Map(),
   lang: loadLang(),
 };
 
@@ -186,7 +187,6 @@ async function refresh() {
     return;
   }
   state.isRefreshing = true;
-  let shouldRender = false;
   try {
     const wasInitialLoad = !state.snapshot;
     const hadError = !!state.error;
@@ -194,11 +194,8 @@ async function refresh() {
     state.error = null;
     if (wasInitialLoad || hadError) render();
 
-    const nextSnapshot = await apiJson(pluginPath('/api/snapshot'));
-    const nextSignature = snapshotRenderSignature(nextSnapshot);
-    shouldRender = wasInitialLoad || hadError || nextSignature !== state.snapshotSignature;
-    state.snapshot = nextSnapshot;
-    state.snapshotSignature = nextSignature;
+    state.snapshot = await apiJson(pluginPath('/api/snapshot'));
+    warmAvatarCache(state.snapshot);
     state.lastRefresh = Date.now();
     if (state.snapshot?.config?.refreshIntervalMs) {
       state.refreshIntervalMs = state.snapshot.config.refreshIntervalMs;
@@ -206,15 +203,13 @@ async function refresh() {
     const subagents = state.snapshot.subagents || [];
     if (subagents.length && !subagents.some(task => task.taskId === state.selectedSubagentId)) {
       state.selectedSubagentId = subagents[0].taskId;
-      shouldRender = true;
     }
   } catch (err) {
     state.error = err.message || String(err);
-    shouldRender = true;
   } finally {
     state.loading = false;
     state.isRefreshing = false;
-    if (shouldRender) render();
+    render();
     if (state.refreshQueued) {
       state.refreshQueued = false;
       setTimeout(() => refresh(), 0);
@@ -222,29 +217,32 @@ async function refresh() {
   }
 }
 
-function snapshotRenderSignature(snap) {
-  if (!snap) return '';
-  return JSON.stringify({
-    agents: (snap.agents || []).map(agent => ({
-      id: agent.id,
-      name: agent.name,
-      status: agent.status,
-      lastSession: agent.lastSession ? { path: agent.lastSession.path, title: agent.lastSession.title } : null,
-    })),
-    subagents: (snap.subagents || []).map(task => ({
-      taskId: task.taskId,
-      status: observedSubagentStatus(task),
-      updatedAt: task.updatedAt,
-      completedAt: task.completedAt,
-      summary: task.summary,
-      reason: task.reason,
-      parentSessionPath: task.parentSessionPath,
-      parentSessionTitle: task.parentSessionTitle,
-      executorAgentId: task.executorAgentId,
-      requestedAgentId: task.requestedAgentId,
-    })),
-    config: snap.config ? { refreshIntervalMs: snap.config.refreshIntervalMs } : null,
-  });
+function warmAvatarCache(snap) {
+  const ids = new Set();
+  for (const agent of snap?.agents || []) {
+    if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
+  }
+  for (const task of snap?.subagents || []) {
+    const agent = subagentDisplayAgent(task);
+    if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
+  }
+  for (const id of ids) ensureAvatarCached(id);
+}
+
+function ensureAvatarCached(agentId) {
+  if (!agentId || state.avatarCache.has(agentId) || state.avatarFetches.has(agentId)) return;
+  const promise = fetch(agentAvatarUrl(agentId))
+    .then(res => res.ok ? res.blob() : null)
+    .then(blob => {
+      state.avatarCache.set(agentId, blob ? URL.createObjectURL(blob) : null);
+      state.avatarFetches.delete(agentId);
+      render();
+    })
+    .catch(() => {
+      state.avatarCache.set(agentId, null);
+      state.avatarFetches.delete(agentId);
+    });
+  state.avatarFetches.set(agentId, promise);
 }
 
 function connectEvents() {
@@ -456,7 +454,8 @@ function kv(label, value) {
 
 function agentAvatar(agent, size = '') {
   const initial = avatarInitial(agent);
-  const src = agent.id && agent.id !== 'unknown' ? agentAvatarUrl(agent.id) : null;
+  const cached = agent.id && state.avatarCache.has(agent.id) ? state.avatarCache.get(agent.id) : undefined;
+  const src = agent.id && agent.id !== 'unknown' ? (cached !== undefined ? cached : agentAvatarUrl(agent.id)) : null;
   return `<span class="agentAvatar ${size} ${esc(agent.status || '')}" aria-hidden="true">
     <span class="avatarFallback">${esc(initial)}</span>
     ${src ? `<img src="${esc(src)}" alt="" loading="eager" decoding="async" onerror="this.remove()">` : ''}
