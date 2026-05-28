@@ -411,23 +411,10 @@ h3 {
   margin-bottom: 16px;
 }
 
-.recommendations,
 .recentSessions {
   border-top: 1px solid var(--obs-line);
   padding-top: 14px;
   margin-top: 14px;
-}
-
-.recommendations p {
-  margin: 6px 0;
-  color: var(--obs-muted);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0 4px;
 }
 
 .sessionRow,
@@ -591,14 +578,6 @@ h3 {
   height: 100%;
   background: linear-gradient(90deg, var(--obs-accent), var(--obs-accent-hover));
   border-radius: inherit;
-}
-
-.promptCard { margin-top: 16px; }
-
-.promptCard pre {
-  white-space: pre-wrap;
-  color: var(--obs-text-light);
-  margin: 0;
 }
 
 .pill {

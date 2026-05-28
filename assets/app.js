@@ -113,8 +113,6 @@ const state = {
   loading: true,
   error: null,
   lastRefresh: null,
-  dispatchPrompt: null,
-  dispatchResult: null,
   refreshTimer: null,
   refreshIntervalMs: 5000,
   lang: loadLang(),
@@ -253,8 +251,6 @@ function renderDashboard() {
         <div class="cardHead"><h2>${t('usagePressure')}</h2><span class="muted">${t('last24h')}</span></div>
         <div class="usageBars">${(snap.usage.byAgent || []).filter(u => u.agentId !== 'unknown').map(usageBar).join('') || `<p class="muted">${t('noUsage')}</p>`}</div>
       </section>
-
-      ${state.dispatchPrompt ? `<section class="card promptCard"><div class="cardHead"><h2>${state.dispatchResult?.sent === true ? t('reviewDispatched') : state.dispatchResult?.sent === false ? t('reviewPromptNotSent') : t('diagnosis')}</h2><button data-action="clearPrompt">${t('close')}</button></div>${state.dispatchResult?.reason ? `<p class="muted">${esc(state.dispatchResult.reason)}</p>` : ''}<pre>${esc(state.dispatchPrompt)}</pre></section>` : ''}
     </main>
   `;
 }
@@ -331,12 +327,6 @@ function renderAgentDetail(agent) {
       ${metric(t('failed'), agent.failedTaskCount)}
       ${metric(t('tokens'), formatTokens(agent.usage24h.totalTokens))}
     </div>
-    <div class="recommendations"><h3>${t('recommendations')}</h3>${(agent.recommendations || []).map(x => `<p>• ${esc(x)}</p>`).join('')}</div>
-    <div class="actions">
-      <button data-action="diagnose" data-agent-id="${esc(agent.id)}">${t('diagnose')}</button>
-      <button data-action="dispatch" data-agent-id="${esc(agent.id)}">${t('buildReviewPrompt')}</button>
-      <button data-action="copyStatus" data-agent-id="${esc(agent.id)}">${t('copyStatus')}</button>
-    </div>
     <div class="recentSessions"><h3>${t('recentSessions')}</h3>${(agent.recentSessions || []).slice(0, 5).map(session => `<div class="sessionRow"><strong>${esc(session.title || t('untitled'))}</strong><span>${timeAgo(session.modified)}</span></div>`).join('') || `<p class="muted">${t('noSessions')}</p>`}</div>
   `;
 }
@@ -395,40 +385,9 @@ function bindActions() {
       const agentId = el.dataset.agentId;
       if (action === 'refresh') refresh();
       if (action === 'selectAgent') { state.selectedAgentId = agentId; render(); }
-      if (action === 'clearPrompt') { state.dispatchPrompt = null; state.dispatchResult = null; render(); }
       if (action === 'setLang') setLang(el.dataset.lang);
-      if (action === 'copyStatus') copyAgentStatus(agentId);
-      if (action === 'diagnose') runDiagnose(agentId);
-      if (action === 'dispatch') runDispatch(agentId);
     });
   });
-}
-
-async function copyAgentStatus(agentId) {
-  const agent = state.snapshot?.agents.find(a => a.id === agentId);
-  if (!agent) return;
-  const text = state.lang === 'zh'
-    ? `${agent.name}：${agent.status}，${t('healthScore')} ${agent.health.score}，${t('tasks')} ${agent.activeTaskCount}，${t('failed')} ${agent.failedTaskCount}`
-    : `${agent.name}: ${agent.status}, health ${agent.health.score}, tasks ${agent.activeTaskCount}, failed ${agent.failedTaskCount}`;
-  await navigator.clipboard?.writeText?.(text).catch(() => {});
-}
-
-async function runDiagnose(agentId) {
-  try {
-    const res = await apiJson(pluginPath('/api/actions/diagnose'), { method: 'POST', body: JSON.stringify({ agentId }) });
-    state.dispatchPrompt = res.text || JSON.stringify(res, null, 2);
-    state.dispatchResult = { sent: false, reason: null };
-    render();
-  } catch (err) { state.error = err.message; render(); }
-}
-
-async function runDispatch(agentId) {
-  try {
-    const res = await apiJson(pluginPath('/api/actions/dispatch-review'), { method: 'POST', body: JSON.stringify({ agentId }) });
-    state.dispatchPrompt = res.prompt || JSON.stringify(res, null, 2);
-    state.dispatchResult = { sent: !!res.sent, reason: res.reason || null };
-    render();
-  } catch (err) { state.error = err.message; render(); }
 }
 
 function tryResize() {
