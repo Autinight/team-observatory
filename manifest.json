@@ -64,6 +64,12 @@
         "steps": [
           { "openSurface": "/dashboard" }
         ]
+      },
+      {
+        "id": "open-widget",
+        "steps": [
+          { "openSurface": "/widget" }
+        ]
       }
     ]
   }

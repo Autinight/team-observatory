@@ -9,45 +9,20 @@ const [
     statusLabel: labelStatus,
     subagentStats: calculateSubagentStats,
   },
+  { currentSearchParams, getRootElement, getSurface, resizeHostFrame },
+  { createInitialState, saveConversationPanelEnabled },
 ] = await Promise.all([
   import(`./api.js${moduleSearch}`),
   import(`./i18n.js${moduleSearch}`),
   import(`./status.js${moduleSearch}`),
+  import(`./platform.js${moduleSearch}`),
+  import(`./state.js${moduleSearch}`),
 ]);
 
-const root = document.getElementById('app');
-const surface = root?.dataset.surface || document.body.dataset.surface || 'dashboard';
+const root = getRootElement();
+const surface = getSurface(root);
 
-const CONVERSATION_PANEL_KEY = 'subagent-observatory.conversationPanelEnabled';
-
-const state = {
-  snapshot: null,
-  selectedSubagentId: null,
-  expandedDetailTaskId: null,
-  expandedChatTaskId: null,
-  loading: true,
-  error: null,
-  lastRefresh: null,
-  refreshTimer: null,
-  lastResizeHeight: 0,
-  readyPosted: false,
-  settingsOpen: false,
-  refreshIntervalMs: 5000,
-  isRefreshing: false,
-  refreshQueued: false,
-  detailScrollTopByTaskId: new Map(),
-  chatByTaskId: new Map(),
-  chatErrorByTaskId: new Map(),
-  chatLoadingTaskId: null,
-  chatScrollTopByKey: new Map(),
-  chatScrollRestoreToken: 0,
-  chatDisclosureOpenByKey: new Map(),
-  terminatingTaskId: null,
-  avatarCache: new Map(),
-  avatarFetches: new Map(),
-  conversationPanelEnabled: loadConversationPanelEnabled(),
-  lang: loadLang(),
-};
+const state = createInitialState({ lang: loadLang() });
 
 const {
   apiUrl,
@@ -64,13 +39,9 @@ function setLang(lang) {
   render();
 }
 
-function loadConversationPanelEnabled() {
-  return localStorage.getItem(CONVERSATION_PANEL_KEY) === 'true';
-}
-
 function setConversationPanelEnabled(enabled) {
   state.conversationPanelEnabled = !!enabled;
-  localStorage.setItem(CONVERSATION_PANEL_KEY, state.conversationPanelEnabled ? 'true' : 'false');
+  saveConversationPanelEnabled(state.conversationPanelEnabled);
   if (!state.conversationPanelEnabled) {
     state.expandedChatTaskId = null;
     state.chatLoadingTaskId = null;
@@ -285,7 +256,7 @@ function renderWidget() {
 }
 
 function currentWidgetSession(snap) {
-  const params = new URL(window.location.href).searchParams;
+  const params = currentSearchParams();
   const sessionPath = params.get('sessionPath');
   if (sessionPath) {
     const known = (snap.agents || [])
@@ -742,15 +713,7 @@ function scheduleChatScrollRestore() {
 }
 
 function tryResize() {
-  const height = Math.min(window.innerHeight || 900, Math.max(260, document.documentElement.scrollHeight));
-  if (Math.abs(height - (state.lastResizeHeight || 0)) > 2) {
-    state.lastResizeHeight = height;
-    window.parent?.postMessage?.({ type: 'resize-request', payload: { height } }, '*');
-  }
-  if (!state.readyPosted) {
-    state.readyPosted = true;
-    window.parent?.postMessage?.({ type: 'ready' }, '*');
-  }
+  resizeHostFrame(state);
 }
 
 function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(Math.round(n)); }
