@@ -6,7 +6,7 @@
   "description": "A visual observatory for subagent runs across currently managed Hana sessions.",
   "minAppVersion": "0.158.0",
   "trust": "full-access",
-  "permissions": ["usage.read", "task.read", "session.read", "session.write"],
+  "permissions": ["usage.read", "task.read", "task.control", "session.read", "session.write"],
   "activationEvents": ["onStartup", "onPageOpen", "onWidgetOpen", "onToolCall:diagnose_agent", "onToolCall:dispatch_review"],
   "ui": {
     "hostCapabilities": ["clipboard.writeText"]

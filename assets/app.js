@@ -40,6 +40,8 @@ const I18N = {
     total: 'Total',
     stale: 'Stale',
     failed: 'Failed',
+    aborted: 'Aborted',
+    canceled: 'Canceled',
     completed: 'Completed',
     active: 'Active',
     requested: 'Requested',
@@ -53,6 +55,8 @@ const I18N = {
     hideChat: 'Hide conversation',
     refreshChat: 'Refresh conversation',
     loadChat: 'Load conversation',
+    terminateSubagent: 'Terminate subagent',
+    terminatingSubagent: 'Terminating...',
     conversationPanelSetting: 'Conversation panel',
     conversationPanelOn: 'On',
     conversationPanelOff: 'Off',
@@ -111,6 +115,8 @@ const I18N = {
     total: '总数',
     stale: '停滞',
     failed: '失败',
+    aborted: '已终止',
+    canceled: '已取消',
     completed: '完成',
     active: '活跃',
     requested: '请求目标',
@@ -124,6 +130,8 @@ const I18N = {
     hideChat: '隐藏对话',
     refreshChat: '刷新对话',
     loadChat: '加载对话',
+    terminateSubagent: '终止 subagent',
+    terminatingSubagent: '正在终止...',
     conversationPanelSetting: '对话面板',
     conversationPanelOn: '开',
     conversationPanelOff: '关',
@@ -173,6 +181,7 @@ const state = {
   chatScrollTopByKey: new Map(),
   chatScrollRestoreToken: 0,
   chatDisclosureOpenByKey: new Map(),
+  terminatingTaskId: null,
   avatarCache: new Map(),
   avatarFetches: new Map(),
   conversationPanelEnabled: loadConversationPanelEnabled(),
@@ -229,8 +238,18 @@ async function apiJson(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  if (!res.ok) throw new Error(await res.text().catch(() => `${res.status} ${res.statusText}`));
-  return res.json();
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
+  if (!res.ok) {
+    const message = typeof data === 'object' && data
+      ? (data.error || data.message || data.result || `${res.status} ${res.statusText}`)
+      : (data || `${res.status} ${res.statusText}`);
+    throw new Error(String(message));
+  }
+  return data;
 }
 
 function pluginPath(path) {
@@ -518,6 +537,7 @@ function renderSubagentInspector(task) {
       </div>
     </div>
     ${detailPreview(task, title)}
+    ${canTerminateSubagent(task) ? renderTerminateActions(task) : ''}
     <div class="timeline">
       ${timelineRow(t('created'), task.createdAt)}
       ${timelineRow(t('updated'), task.updatedAt)}
@@ -533,6 +553,14 @@ function renderSubagentInspector(task) {
       ${task.reason ? kv(t('reason'), task.reason) : kv(t('reason'), t('noReason'))}
     </div>
   `;
+}
+
+function renderTerminateActions(task) {
+  const taskId = task.taskId;
+  const isTerminating = state.terminatingTaskId === taskId;
+  return `<div class="inspectorActions terminateActions">
+    <button class="dangerButton" data-action="terminateSubagent" data-task-id="${esc(taskId)}" ${isTerminating ? 'disabled' : ''}>${isTerminating ? t('terminatingSubagent') : t('terminateSubagent')}</button>
+  </div>`;
 }
 
 function renderChatBoard(task) {
@@ -740,6 +768,8 @@ function lastUpdateAgeMs(task) {
 function statusLabel(status) {
   if (status === 'stale') return t('stale');
   if (status === 'failed') return t('failed');
+  if (status === 'aborted') return t('aborted');
+  if (status === 'canceled') return t('canceled');
   if (status === 'completed' || status === 'resolved') return t('completed');
   if (status === 'running') return t('running');
   return status || t('unknown');
@@ -769,6 +799,37 @@ async function selectSubagent(taskId) {
   if (keepChatOpen) await loadChatDetails(taskId);
 }
 
+function canTerminateSubagent(task) {
+  return ['running', 'pending', 'blocked', 'recovering', 'stale'].includes(observedSubagentStatus(task));
+}
+
+async function terminateSubagent(taskId) {
+  if (!taskId || state.terminatingTaskId) return;
+  state.terminatingTaskId = taskId;
+  state.error = null;
+  render();
+  try {
+    await apiJson(`/api/task/${encodeURIComponent(taskId)}/abort`, { method: 'POST' });
+    markSubagentTerminated(taskId);
+    render();
+    setTimeout(() => { refresh(); }, 600);
+  } catch (err) {
+    state.error = err.message || String(err);
+  } finally {
+    state.terminatingTaskId = null;
+    render();
+  }
+}
+
+function markSubagentTerminated(taskId) {
+  const now = new Date().toISOString();
+  const patch = task => task.taskId === taskId
+    ? { ...task, status: 'aborted', reason: task.reason || t('aborted'), updatedAt: now, completedAt: task.completedAt || now }
+    : task;
+  if (Array.isArray(state.snapshot?.subagents)) state.snapshot.subagents = state.snapshot.subagents.map(patch);
+  if (Array.isArray(state.snapshot?.tasks)) state.snapshot.tasks = state.snapshot.tasks.map(patch);
+}
+
 function bindActions() {
   root.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', async () => {
@@ -778,6 +839,7 @@ function bindActions() {
       if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
       if (action === 'toggleChat') await toggleChatDetails(el.dataset.taskId);
       if (action === 'refreshChat') await loadChatDetails(el.dataset.taskId, { force: true });
+      if (action === 'terminateSubagent') await terminateSubagent(el.dataset.taskId);
       if (action === 'toggleSettings') { state.settingsOpen = !state.settingsOpen; render(); }
       if (action === 'toggleConversationPanel') setConversationPanelEnabled(!state.conversationPanelEnabled);
       if (action === 'setLang') setLang(el.dataset.lang);
