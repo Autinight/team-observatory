@@ -1,0 +1,28 @@
+{
+  "runs": {
+    "task-2026-001": {
+      "taskId": "task-2026-001",
+      "status": "completed",
+      "parentSessionPath": "/path/to/main-session.jsonl",
+      "childSessionPath": "/path/to/child-session.jsonl",
+      "createdAt": "2026-05-28T10:00:00.000Z",
+      "updatedAt": "2026-05-28T10:05:00.000Z",
+      "dispatcherAgentId": "rihane",
+      "requestedAgentId": "hanako",
+      "executorAgentId": "hanako"
+    },
+    "task-2026-002": {
+      "taskId": "task-2026-002",
+      "status": "running",
+      "parentSessionPath": "/path/to/main-session2.jsonl",
+      "createdAt": "2026-05-28T10:10:00.000Z"
+    },
+    "task-2026-003": {
+      "taskId": "task-2026-003",
+      "status": "failed",
+      "reason": "timeout",
+      "parentSessionPath": "/path/to/archived/sessions/archived/main-session3.jsonl",
+      "createdAt": "2026-05-28T09:00:00.000Z"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "tasks": [
+    {
+      "taskId": "merged-001",
+      "type": "subagent",
+      "status": "completed",
+      "createdAt": "2026-05-29T00:00:00.000Z",
+      "updatedAt": "2026-05-29T00:10:00.000Z",
+      "agentId": "shiraha",
+      "executorAgentId": "rihane"
+    },
+    {
+      "taskId": "merged-002",
+      "type": "subagent",
+      "status": "running",
+      "createdAt": "2026-05-29T00:20:00.000Z",
+      "agentId": "shiraha"
+    }
+  ],
+  "runs": [
+    {
+      "taskId": "merged-001",
+      "status": "failed",
+      "reason": "the task registry says completed but run store says failed",
+      "createdAt": "2026-05-29T00:00:00.000Z",
+      "updatedAt": "2026-05-29T00:15:00.000Z"
+    },
+    {
+      "taskId": "merged-002",
+      "status": "completed",
+      "reason": "the task registry says running but run store says completed",
+      "createdAt": "2026-05-29T00:20:00.000Z",
+      "updatedAt": "2026-05-29T00:25:00.000Z"
+    }
+  ]
+}
