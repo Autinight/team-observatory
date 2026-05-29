@@ -13,6 +13,8 @@ const [
   { createInitialState, saveConversationPanelEnabled },
   { createAvatarHelpers },
   { createScrollHelpers },
+  { createUtils },
+  { createActions },
 ] = await Promise.all([
   import(`./api.js${moduleSearch}`),
   import(`./i18n.js${moduleSearch}`),
@@ -21,6 +23,8 @@ const [
   import(`./state.js${moduleSearch}`),
   import(`./avatar.js${moduleSearch}`),
   import(`./scroll.js${moduleSearch}`),
+  import(`./utils.js${moduleSearch}`),
+  import(`./actions.js${moduleSearch}`),
 ]);
 
 const root = getRootElement();
@@ -35,6 +39,12 @@ const {
   agentAvatarUrl,
   abortTaskLikeChatCard,
 } = createApiClient({ root });
+
+function t(key, vars = {}) {
+  return translate(state.lang, key, vars);
+}
+
+const { formatTokens, timeAgo, esc, compactPath } = createUtils({ t });
 
 const { avatarInitial, agentAvatar, warmAvatarCache, ensureAvatarCached } = createAvatarHelpers({
   esc,
@@ -56,6 +66,22 @@ const {
   scheduleChatScrollRestore,
 } = createScrollHelpers(state);
 
+const { bindActions } = createActions({
+  root,
+  state,
+  refresh,
+  render,
+  selectSubagent,
+  toggleChatDetails,
+  loadChatDetails,
+  terminateSubagent,
+  setConversationPanelEnabled,
+  setLang,
+  bindDetailScrollMemory,
+  bindChatScrollMemory,
+  bindChatDisclosureMemory,
+});
+
 function setLang(lang) {
   if (lang !== 'zh' && lang !== 'en') return;
   state.lang = lang;
@@ -72,10 +98,6 @@ function setConversationPanelEnabled(enabled) {
     state.chatErrorByTaskId.clear();
   }
   render();
-}
-
-function t(key, vars = {}) {
-  return translate(state.lang, key, vars);
 }
 
 async function refresh() {
@@ -531,12 +553,6 @@ function durationLabel(task) {
   return minutes < 1 ? '<1m' : `${minutes}m`;
 }
 
-function compactPath(value) {
-  if (!value) return '';
-  const parts = String(value).replace(/\\/g, '/').split('/').filter(Boolean);
-  return parts.slice(-2).join('/');
-}
-
 async function selectSubagent(taskId) {
   if (!taskId) return;
   const keepChatOpen = conversationPanelEnabled() && !!state.expandedChatTaskId;
@@ -578,33 +594,9 @@ function markSubagentTerminated(taskId) {
   if (Array.isArray(state.snapshot?.tasks)) state.snapshot.tasks = state.snapshot.tasks.map(patch);
 }
 
-function bindActions() {
-  root.querySelectorAll('[data-action]').forEach(el => {
-    el.addEventListener('click', async () => {
-      const action = el.dataset.action;
-      if (action === 'refresh') refresh();
-      if (action === 'selectSubagent') await selectSubagent(el.dataset.taskId);
-      if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
-      if (action === 'toggleChat') await toggleChatDetails(el.dataset.taskId);
-      if (action === 'refreshChat') await loadChatDetails(el.dataset.taskId, { force: true });
-      if (action === 'terminateSubagent') await terminateSubagent(el.dataset.taskId);
-      if (action === 'toggleSettings') { state.settingsOpen = !state.settingsOpen; render(); }
-      if (action === 'toggleConversationPanel') setConversationPanelEnabled(!state.conversationPanelEnabled);
-      if (action === 'setLang') setLang(el.dataset.lang);
-    });
-  });
-  bindDetailScrollMemory(root);
-  bindChatScrollMemory(root);
-  bindChatDisclosureMemory(root);
-}
-
 function tryResize() {
   resizeHostFrame(state);
 }
-
-function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(Math.round(n)); }
-function timeAgo(value) { const t0 = new Date(value || 0).getTime(); if (!t0) return t('unknown'); const s = Math.max(0, Math.round((Date.now() - t0)/1000)); if (s < 60) return t('secondsAgo', { n: s }); const m = Math.round(s/60); return m < 60 ? t('minutesAgo', { n: m }) : t('hoursAgo', { n: Math.round(m/60) }); }
-function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function conversationPanelEnabled() {
   return state.conversationPanelEnabled === true;
