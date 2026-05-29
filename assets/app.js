@@ -133,6 +133,7 @@ const state = {
   refreshIntervalMs: 5000,
   isRefreshing: false,
   refreshQueued: false,
+  detailScrollTopByTaskId: new Map(),
   avatarCache: new Map(),
   avatarFetches: new Map(),
   lang: loadLang(),
@@ -260,8 +261,10 @@ function connectEvents() {
 
 function render() {
   if (!root) return;
+  captureDetailScroll();
   root.innerHTML = surface === 'widget' ? renderWidget() : renderDashboard();
   bindActions();
+  restoreDetailScroll();
   tryResize();
 }
 
@@ -453,7 +456,7 @@ function detailPreview(task, text) {
       <span>${t('preview')}</span>
       ${isLong ? `<button data-action="toggleDetails" data-task-id="${esc(task.taskId)}">${expanded ? t('hideDetails') : t('viewDetails')}</button>` : ''}
     </div>
-    ${expanded ? `<pre class="detailText">${esc(value)}</pre>` : `<p class="previewText">${esc(value)}</p>`}
+    ${expanded ? `<pre class="detailText" data-task-id="${esc(task.taskId)}">${esc(value)}</pre>` : `<p class="previewText">${esc(value)}</p>`}
   </div>`;
 }
 
@@ -553,6 +556,30 @@ function bindActions() {
       if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
       if (action === 'setLang') setLang(el.dataset.lang);
     });
+  });
+  bindDetailScrollMemory();
+}
+
+function bindDetailScrollMemory() {
+  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
+    el.addEventListener('scroll', () => {
+      state.detailScrollTopByTaskId.set(el.dataset.taskId, el.scrollTop || 0);
+    }, { passive: true });
+  });
+}
+
+function captureDetailScroll() {
+  if (!root) return;
+  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
+    state.detailScrollTopByTaskId.set(el.dataset.taskId, el.scrollTop || 0);
+  });
+}
+
+function restoreDetailScroll() {
+  if (!root) return;
+  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
+    const saved = state.detailScrollTopByTaskId.get(el.dataset.taskId);
+    if (typeof saved === 'number') el.scrollTop = saved;
   });
 }
 
