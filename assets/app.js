@@ -89,7 +89,7 @@ const I18N = {
     refresh: '刷新',
     subagentRuns: 'Subagent 运行',
     subagentInspector: 'Subagent 检查器',
-    noSubagent: '未选择 subagent。',
+    noSubagent: '未选择 subagent',
     noSubagents: '暂无 subagent 运行，后台很安静。',
     noWidgetSubagents: '当前会话暂无 subagent。',
     noCurrentSession: '没有当前会话。',
@@ -536,7 +536,16 @@ function renderSubagentInspector(task) {
 }
 
 function renderChatBoard(task) {
-  if (!task) return '';
+  if (!task) {
+    return `<section class="card chatBoard emptyChatBoard">
+      <div class="cardHead chatBoardHead">
+        <div>
+          <h2>${t('chatDetails')}</h2>
+          <p class="muted">${t('noSubagent')}</p>
+        </div>
+      </div>
+    </section>`;
+  }
   const requestedAgent = subagentDisplayAgent(task);
   const executorAgent = executorDisplayAgent(task);
   const isOpen = state.expandedChatTaskId === task.taskId;
