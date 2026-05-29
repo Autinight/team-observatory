@@ -48,6 +48,17 @@ const I18N = {
     preview: 'Preview',
     viewDetails: 'View details',
     hideDetails: 'Hide details',
+    chatDetails: 'Conversation',
+    hideChat: 'Hide conversation',
+    refreshChat: 'Refresh conversation',
+    loadChat: 'Load conversation',
+    mainConversation: 'Main agent',
+    subagentConversation: 'Subagent',
+    noMessages: 'No messages.',
+    chatUnavailable: 'Chat history unavailable.',
+    thinking: 'Thinking',
+    toolCalls: 'Tool calls',
+    images: 'Images',
     taskId: 'Task ID',
     parent: 'Parent',
     created: 'Created',
@@ -104,6 +115,17 @@ const I18N = {
     preview: '预览',
     viewDetails: '查看详情',
     hideDetails: '收起详情',
+    chatDetails: '对话详情',
+    hideChat: '隐藏对话',
+    refreshChat: '刷新对话',
+    loadChat: '加载对话',
+    mainConversation: 'Main Agent',
+    subagentConversation: 'Subagent',
+    noMessages: '没有消息。',
+    chatUnavailable: '聊天历史不可用。',
+    thinking: '思考',
+    toolCalls: '工具调用',
+    images: '图片',
     taskId: '任务 ID',
     parent: '父会话',
     created: '创建',
@@ -124,6 +146,7 @@ const state = {
   snapshot: null,
   selectedSubagentId: null,
   expandedDetailTaskId: null,
+  expandedChatTaskId: null,
   loading: true,
   error: null,
   lastRefresh: null,
@@ -134,6 +157,10 @@ const state = {
   isRefreshing: false,
   refreshQueued: false,
   detailScrollTopByTaskId: new Map(),
+  chatByTaskId: new Map(),
+  chatErrorByTaskId: new Map(),
+  chatLoadingTaskId: null,
+  chatScrollTopByKey: new Map(),
   avatarCache: new Map(),
   avatarFetches: new Map(),
   lang: loadLang(),
@@ -204,6 +231,10 @@ async function refresh() {
     const subagents = state.snapshot.subagents || [];
     if (subagents.length && !subagents.some(task => task.taskId === state.selectedSubagentId)) {
       state.selectedSubagentId = subagents[0].taskId;
+      state.expandedChatTaskId = null;
+    }
+    if (state.expandedChatTaskId && !subagents.some(task => task.taskId === state.expandedChatTaskId)) {
+      state.expandedChatTaskId = null;
     }
   } catch (err) {
     state.error = err.message || String(err);
@@ -262,9 +293,11 @@ function connectEvents() {
 function render() {
   if (!root) return;
   captureDetailScroll();
+  captureChatScroll();
   root.innerHTML = surface === 'widget' ? renderWidget() : renderDashboard();
   bindActions();
   restoreDetailScroll();
+  restoreChatScroll();
   tryResize();
 }
 
@@ -300,12 +333,15 @@ function renderDashboard() {
       ${state.error ? `<div class="inlineError">${esc(state.error)}</div>` : ''}
 
       <section class="subagentLayout">
-        <div class="card subagentMainCard">
-          <div class="cardHead">
-            <div><h2>${t('subagentRuns')}</h2></div>
-            <button data-action="refresh">${t('refresh')}</button>
+        <div class="subagentLeftColumn">
+          <div class="card subagentMainCard">
+            <div class="cardHead">
+              <div><h2>${t('subagentRuns')}</h2></div>
+              <button data-action="refresh">${t('refresh')}</button>
+            </div>
+            ${subagentGrid(subagents)}
           </div>
-          ${subagentGrid(subagents)}
+          ${renderChatBoard(selected)}
         </div>
         <aside class="card inspectorCard">
           ${renderSubagentInspector(selected)}
@@ -447,6 +483,114 @@ function renderSubagentInspector(task) {
   `;
 }
 
+function renderChatBoard(task) {
+  if (!task) return '';
+  const requestedAgent = subagentDisplayAgent(task);
+  const executorAgent = executorDisplayAgent(task);
+  const isOpen = state.expandedChatTaskId === task.taskId;
+  return `<section class="card chatBoard">
+    <div class="cardHead chatBoardHead">
+      <div>
+        <h2>${t('chatDetails')}</h2>
+        <p class="muted">${esc(requestedAgent.name || requestedAgent.id)} ⇄ ${esc(executorAgent.name || executorAgent.id)}</p>
+      </div>
+      <div class="inspectorActions chatActions ${isOpen ? 'open' : 'closed'}">
+        ${isOpen ? `<button data-action="refreshChat" data-task-id="${esc(task.taskId)}">${t('refreshChat')}</button>` : ''}
+        <button data-action="toggleChat" data-task-id="${esc(task.taskId)}">${isOpen ? t('hideChat') : t('loadChat')}</button>
+      </div>
+    </div>
+    ${isOpen ? renderChatDetails(task) : ''}
+  </section>`;
+}
+
+async function toggleChatDetails(taskId) {
+  if (!taskId) return;
+  if (state.expandedChatTaskId === taskId) {
+    state.expandedChatTaskId = null;
+    render();
+    return;
+  }
+  state.expandedChatTaskId = taskId;
+  render();
+  await loadChatDetails(taskId);
+}
+
+async function loadChatDetails(taskId, options = {}) {
+  if (!taskId) return;
+  if (!options.force && state.chatByTaskId.has(taskId)) {
+    render();
+    return;
+  }
+  state.chatLoadingTaskId = taskId;
+  state.chatErrorByTaskId.delete(taskId);
+  render();
+  try {
+    const chat = await apiJson(pluginPath(`/api/subagent-chat?taskId=${encodeURIComponent(taskId)}&limit=120`));
+    state.chatByTaskId.set(taskId, chat);
+  } catch (err) {
+    state.chatErrorByTaskId.set(taskId, err.message || String(err));
+  } finally {
+    if (state.chatLoadingTaskId === taskId) state.chatLoadingTaskId = null;
+    render();
+  }
+}
+
+function renderChatDetails(task) {
+  const taskId = task.taskId;
+  const chat = state.chatByTaskId.get(taskId);
+  const error = state.chatErrorByTaskId.get(taskId);
+  const loading = state.chatLoadingTaskId === taskId;
+  if (loading && !chat) return `<div class="chatDetails"><p class="muted">${t('observing')}</p></div>`;
+  if (error && !chat) return `<div class="chatDetails"><p class="inlineError">${esc(error)}</p></div>`;
+  if (!chat) return `<div class="chatDetails"><p class="muted">${t('chatUnavailable')}</p></div>`;
+  const messages = conversationMessages(chat);
+  return `<div class="chatDetails ${loading ? 'loading' : ''}">
+    ${error ? `<p class="inlineError">${esc(error)}</p>` : ''}
+    <div class="chatLegend">
+      <span class="legendSubagent">${t('subagentConversation')}: ${esc(chat.child?.agentName || chat.child?.agentId || t('unknown'))}</span>
+      <span class="legendMain">${t('mainConversation')}: ${esc(chat.main?.agentName || chat.main?.agentId || t('unknown'))}</span>
+    </div>
+    ${chat.child?.available === false ? `<p class="muted">${esc(chat.child.error || t('chatUnavailable'))}</p>` : ''}
+    <div class="chatMessageList single" data-chat-scroll-key="chat:${esc(taskId)}">
+      ${messages.length ? messages.map(renderChatMessage).join('') : `<p class="muted">${t('noMessages')}</p>`}
+    </div>
+  </div>`;
+}
+
+function conversationMessages(chat) {
+  const messages = Array.isArray(chat?.child?.messages) ? chat.child.messages : [];
+  return messages.map((message, index) => {
+    const role = String(message?.role || 'unknown').toLowerCase();
+    const isMainPrompt = role === 'user';
+    return {
+      ...message,
+      side: isMainPrompt ? 'main' : 'subagent',
+      source: isMainPrompt ? t('mainConversation') : t('subagentConversation'),
+      displayRole: isMainPrompt ? 'request' : role,
+      order: index,
+    };
+  });
+}
+
+function renderChatMessage(message) {
+  const role = String(message?.role || 'unknown').toLowerCase();
+  const side = message?.side === 'main' ? 'main' : 'subagent';
+  const displayRole = String(message?.displayRole || role);
+  const content = String(message?.content || '').trim();
+  const thinking = String(message?.thinking || '').trim();
+  const toolCalls = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+  const images = Array.isArray(message?.images) ? message.images : [];
+  return `<div class="chatRow ${esc(side)}">
+    <div class="chatBubble ${esc(role)}">
+      <div class="chatRole">${esc(message?.source || side)} · ${esc(displayRole)}</div>
+      ${content ? `<pre>${esc(content)}</pre>` : ''}
+      ${thinking ? `<details><summary>${t('thinking')}</summary><pre>${esc(thinking)}</pre></details>` : ''}
+      ${toolCalls.length ? `<details><summary>${t('toolCalls')} · ${toolCalls.length}</summary><pre>${esc(JSON.stringify(toolCalls, null, 2))}</pre></details>` : ''}
+      ${images.length ? `<small class="muted">${t('images')}: ${images.length}</small>` : ''}
+    </div>
+  </div>`;
+}
+
 function detailPreview(task, text) {
   const value = String(text || task.taskId || '');
   const expanded = state.expandedDetailTaskId === task.taskId;
@@ -547,23 +691,44 @@ function compactPath(value) {
   return parts.slice(-2).join('/');
 }
 
+async function selectSubagent(taskId) {
+  if (!taskId) return;
+  const keepChatOpen = !!state.expandedChatTaskId;
+  state.selectedSubagentId = taskId;
+  state.expandedDetailTaskId = null;
+  state.expandedChatTaskId = keepChatOpen ? taskId : null;
+  render();
+  if (keepChatOpen) await loadChatDetails(taskId);
+}
+
 function bindActions() {
   root.querySelectorAll('[data-action]').forEach(el => {
     el.addEventListener('click', async () => {
       const action = el.dataset.action;
       if (action === 'refresh') refresh();
-      if (action === 'selectSubagent') { state.selectedSubagentId = el.dataset.taskId; state.expandedDetailTaskId = null; render(); }
+      if (action === 'selectSubagent') await selectSubagent(el.dataset.taskId);
       if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
+      if (action === 'toggleChat') await toggleChatDetails(el.dataset.taskId);
+      if (action === 'refreshChat') await loadChatDetails(el.dataset.taskId, { force: true });
       if (action === 'setLang') setLang(el.dataset.lang);
     });
   });
   bindDetailScrollMemory();
+  bindChatScrollMemory();
 }
 
 function bindDetailScrollMemory() {
   root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
     el.addEventListener('scroll', () => {
       state.detailScrollTopByTaskId.set(el.dataset.taskId, el.scrollTop || 0);
+    }, { passive: true });
+  });
+}
+
+function bindChatScrollMemory() {
+  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
+    el.addEventListener('scroll', () => {
+      state.chatScrollTopByKey.set(el.dataset.chatScrollKey, el.scrollTop || 0);
     }, { passive: true });
   });
 }
@@ -579,6 +744,21 @@ function restoreDetailScroll() {
   if (!root) return;
   root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
     const saved = state.detailScrollTopByTaskId.get(el.dataset.taskId);
+    if (typeof saved === 'number') el.scrollTop = saved;
+  });
+}
+
+function captureChatScroll() {
+  if (!root) return;
+  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
+    state.chatScrollTopByKey.set(el.dataset.chatScrollKey, el.scrollTop || 0);
+  });
+}
+
+function restoreChatScroll() {
+  if (!root) return;
+  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
+    const saved = state.chatScrollTopByKey.get(el.dataset.chatScrollKey);
     if (typeof saved === 'number') el.scrollTop = saved;
   });
 }

@@ -54,6 +54,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .cardHead p { margin: 2px 0 0; }
 
 .subagentLayout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 16px; align-items: start; }
+.subagentLeftColumn { display: grid; gap: 16px; min-width: 0; }
 
 .subagentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 12px; }
 .emptySubagents { margin: 18px 0 4px; }
@@ -83,8 +84,30 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
 .inspectorTask { border: 1px solid var(--obs-line); border-radius: 16px; padding: 12px; background: var(--obs-overlay-subtle); margin-bottom: 14px; }
 .inspectorTaskHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--obs-muted); font-size: 12px; }
 .inspectorTaskHead button { padding: 3px 8px; border-radius: 999px; font-size: 12px; }
+.inspectorActions { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+.inspectorActions.chatActions { justify-content: flex-end; margin: 0; }
+.inspectorActions button { padding: 5px 10px; border-radius: 999px; font-size: 12px; }
 .previewText { margin: 0; color: var(--obs-text); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
 .detailText { margin: 0; max-height: 360px; overflow: auto; color: var(--obs-text); white-space: pre-wrap; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 10px; border-radius: 12px; background: var(--obs-overlay-subtle); border: 1px solid var(--obs-line); }
+.chatBoard { }
+.chatBoardHead { align-items: flex-start; margin-bottom: 10px; }
+.chatBoardHead h2 { font-size: 18px; }
+.chatDetails { border: 1px solid var(--obs-line); border-radius: 18px; padding: 12px; background: var(--obs-overlay-subtle); }
+.chatDetails.loading { opacity: .78; }
+.chatLegend { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; color: var(--obs-muted); font-size: 12px; }
+.legendSubagent { text-align: left; }
+.legendMain { text-align: right; margin-left: auto; }
+.chatMessageList { display: grid; gap: 10px; max-height: 430px; overflow: auto; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--obs-bg) 72%, var(--obs-card)); }
+.chatRow { display: flex; width: 100%; }
+.chatRow.subagent { justify-content: flex-start; }
+.chatRow.main { justify-content: flex-end; }
+.chatBubble { max-width: min(72%, 760px); border: 1px solid var(--obs-line); border-radius: 16px; padding: 10px 12px; box-shadow: 0 6px 18px var(--obs-shadow); }
+.chatRow.subagent .chatBubble { border-bottom-left-radius: 6px; background: var(--obs-card); }
+.chatRow.main .chatBubble { border-bottom-right-radius: 6px; background: color-mix(in srgb, var(--obs-accent) 13%, var(--obs-card)); }
+.chatRole { display: inline-block; color: var(--obs-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.chatBubble pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--obs-text); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.chatBubble details { margin-top: 7px; }
+.chatBubble summary { color: var(--obs-muted); font-size: 12px; cursor: default; }
 .timeline { display: grid; gap: 2px; padding: 2px 0 12px; margin-bottom: 10px; border-bottom: 1px solid var(--obs-line); }
 .timelineRow { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; padding: 5px 0; }
 .timelineRow > span { width: 9px; height: 9px; border-radius: 99px; margin-top: 6px; background: var(--obs-accent); box-shadow: 0 0 0 4px var(--obs-accent-light); }
@@ -144,6 +167,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
   .heroAside { min-width: 0; width: 100%; justify-items: end; }
   .heroStats { min-width: 0; }
   .inspectorCard { position: static; }
+  .chatBubble { max-width: 88%; }
 }
 
 @media (max-width: 640px) {
@@ -151,4 +175,7 @@ button:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 2px
   .heroStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .subagentGrid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
   .kv { grid-template-columns: 1fr; gap: 2px; }
+  .chatLegend { display: grid; }
+  .legendMain { margin-left: 0; text-align: left; }
+  .chatBubble { max-width: 94%; }
 }
