@@ -2,6 +2,7 @@ const root = document.getElementById('app');
 const surface = root?.dataset.surface || document.body.dataset.surface || 'dashboard';
 
 const LANG_KEY = 'subagent-observatory.lang';
+const CONVERSATION_PANEL_KEY = 'subagent-observatory.conversationPanelEnabled';
 const DEFAULT_LANG = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
 const DEFAULT_STALE_AFTER_MS = 10 * 60 * 1000;
 
@@ -52,6 +53,10 @@ const I18N = {
     hideChat: 'Hide conversation',
     refreshChat: 'Refresh conversation',
     loadChat: 'Load conversation',
+    conversationPanelSetting: 'Conversation panel',
+    conversationPanelOn: 'On',
+    conversationPanelOff: 'Off',
+    settings: 'Settings',
     mainConversation: 'Main agent',
     subagentConversation: 'Subagent',
     noMessages: 'No messages.',
@@ -119,6 +124,10 @@ const I18N = {
     hideChat: '隐藏对话',
     refreshChat: '刷新对话',
     loadChat: '加载对话',
+    conversationPanelSetting: '对话面板',
+    conversationPanelOn: '开',
+    conversationPanelOff: '关',
+    settings: '设置',
     mainConversation: 'Main Agent',
     subagentConversation: 'Subagent',
     noMessages: '没有消息。',
@@ -153,6 +162,7 @@ const state = {
   refreshTimer: null,
   lastResizeHeight: 0,
   readyPosted: false,
+  settingsOpen: false,
   refreshIntervalMs: 5000,
   isRefreshing: false,
   refreshQueued: false,
@@ -161,8 +171,11 @@ const state = {
   chatErrorByTaskId: new Map(),
   chatLoadingTaskId: null,
   chatScrollTopByKey: new Map(),
+  chatScrollRestoreToken: 0,
+  chatDisclosureOpenByKey: new Map(),
   avatarCache: new Map(),
   avatarFetches: new Map(),
+  conversationPanelEnabled: loadConversationPanelEnabled(),
   lang: loadLang(),
 };
 
@@ -175,6 +188,21 @@ function setLang(lang) {
   if (lang !== 'zh' && lang !== 'en') return;
   state.lang = lang;
   localStorage.setItem(LANG_KEY, lang);
+  render();
+}
+
+function loadConversationPanelEnabled() {
+  return localStorage.getItem(CONVERSATION_PANEL_KEY) === 'true';
+}
+
+function setConversationPanelEnabled(enabled) {
+  state.conversationPanelEnabled = !!enabled;
+  localStorage.setItem(CONVERSATION_PANEL_KEY, state.conversationPanelEnabled ? 'true' : 'false');
+  if (!state.conversationPanelEnabled) {
+    state.expandedChatTaskId = null;
+    state.chatLoadingTaskId = null;
+    state.chatErrorByTaskId.clear();
+  }
   render();
 }
 
@@ -294,10 +322,12 @@ function render() {
   if (!root) return;
   captureDetailScroll();
   captureChatScroll();
+  captureChatDisclosureState();
   root.innerHTML = surface === 'widget' ? renderWidget() : renderDashboard();
   bindActions();
   restoreDetailScroll();
   restoreChatScroll();
+  scheduleChatScrollRestore();
   tryResize();
 }
 
@@ -320,7 +350,10 @@ function renderDashboard() {
           <p>${t('subtitle')}</p>
         </div>
         <div class="heroAside">
-          ${languageSwitch()}
+          <div class="heroControls">
+            ${settingsMenu()}
+            ${languageSwitch()}
+          </div>
           <div class="heroStats subagentStats">
             ${metric(t('active'), stats.active)}
             ${metric(t('stale'), stats.stale)}
@@ -341,7 +374,7 @@ function renderDashboard() {
             </div>
             ${subagentGrid(subagents)}
           </div>
-          ${renderChatBoard(selected)}
+          ${conversationPanelEnabled() ? renderChatBoard(selected) : ''}
         </div>
         <aside class="card inspectorCard">
           ${renderSubagentInspector(selected)}
@@ -349,6 +382,25 @@ function renderDashboard() {
       </section>
     </main>
   `;
+}
+
+function settingsMenu() {
+  const open = state.settingsOpen;
+  const enabled = conversationPanelEnabled();
+  return `<div class="settingsMenu ${open ? 'open' : ''}">
+    <button class="settingsIcon" data-action="toggleSettings" aria-label="${t('settings')}" aria-expanded="${open}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="3.2"></circle>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2.05 2.05 0 0 1 0 2.9 2.05 2.05 0 0 1-2.9 0l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2.05 2.05 0 0 1-4.1 0v-.09a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2.05 2.05 0 0 1-2.9 0 2.05 2.05 0 0 1 0-2.9l.06-.06A1.7 1.7 0 0 0 4.4 15a1.7 1.7 0 0 0-1.56-1.03H2.75a2.05 2.05 0 0 1 0-4.1h.09A1.7 1.7 0 0 0 4.4 8.84a1.7 1.7 0 0 0-.34-1.87L4 6.91a2.05 2.05 0 0 1 0-2.9 2.05 2.05 0 0 1 2.9 0l.06.06a1.7 1.7 0 0 0 1.87.34A1.7 1.7 0 0 0 9.86 2.85V2.75a2.05 2.05 0 0 1 4.1 0v.09A1.7 1.7 0 0 0 15 4.4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2.05 2.05 0 0 1 2.9 0 2.05 2.05 0 0 1 0 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.56 1.03h.09a2.05 2.05 0 0 1 0 4.1h-.09A1.7 1.7 0 0 0 19.4 15z"></path>
+      </svg>
+    </button>
+    ${open ? `<div class="settingsPopover">
+      <button class="settingsRow" data-action="toggleConversationPanel" aria-pressed="${enabled}">
+        <span>${t('conversationPanelSetting')}</span>
+        <strong class="settingState ${enabled ? 'on' : 'off'}">${enabled ? t('conversationPanelOn') : t('conversationPanelOff')}</strong>
+      </button>
+    </div>` : ''}
+  </div>`;
 }
 
 function languageSwitch() {
@@ -504,6 +556,7 @@ function renderChatBoard(task) {
 }
 
 async function toggleChatDetails(taskId) {
+  if (!conversationPanelEnabled()) return;
   if (!taskId) return;
   if (state.expandedChatTaskId === taskId) {
     state.expandedChatTaskId = null;
@@ -516,6 +569,7 @@ async function toggleChatDetails(taskId) {
 }
 
 async function loadChatDetails(taskId, options = {}) {
+  if (!conversationPanelEnabled()) return;
   if (!taskId) return;
   if (!options.force && state.chatByTaskId.has(taskId)) {
     render();
@@ -552,7 +606,7 @@ function renderChatDetails(task) {
     </div>
     ${chat.child?.available === false ? `<p class="muted">${esc(chat.child.error || t('chatUnavailable'))}</p>` : ''}
     <div class="chatMessageList single" data-chat-scroll-key="chat:${esc(taskId)}">
-      ${messages.length ? messages.map(renderChatMessage).join('') : `<p class="muted">${t('noMessages')}</p>`}
+      ${messages.length ? messages.map(message => renderChatMessage(message, taskId)).join('') : `<p class="muted">${t('noMessages')}</p>`}
     </div>
   </div>`;
 }
@@ -572,7 +626,7 @@ function conversationMessages(chat) {
   });
 }
 
-function renderChatMessage(message) {
+function renderChatMessage(message, taskId) {
   const role = String(message?.role || 'unknown').toLowerCase();
   const side = message?.side === 'main' ? 'main' : 'subagent';
   const displayRole = String(message?.displayRole || role);
@@ -580,12 +634,17 @@ function renderChatMessage(message) {
   const thinking = String(message?.thinking || '').trim();
   const toolCalls = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
   const images = Array.isArray(message?.images) ? message.images : [];
+  const messageKey = `chat:${taskId}:message:${message?.order ?? 0}`;
+  const thinkingKey = `${messageKey}:thinking`;
+  const toolCallsKey = `${messageKey}:toolCalls`;
+  const thinkingOpen = state.chatDisclosureOpenByKey.get(thinkingKey) === true;
+  const toolCallsOpen = state.chatDisclosureOpenByKey.get(toolCallsKey) === true;
   return `<div class="chatRow ${esc(side)}">
     <div class="chatBubble ${esc(role)}">
       <div class="chatRole">${esc(message?.source || side)} · ${esc(displayRole)}</div>
       ${content ? `<pre>${esc(content)}</pre>` : ''}
-      ${thinking ? `<details><summary>${t('thinking')}</summary><pre>${esc(thinking)}</pre></details>` : ''}
-      ${toolCalls.length ? `<details><summary>${t('toolCalls')} · ${toolCalls.length}</summary><pre>${esc(JSON.stringify(toolCalls, null, 2))}</pre></details>` : ''}
+      ${thinking ? `<details data-chat-disclosure-key="${esc(thinkingKey)}" ${thinkingOpen ? 'open' : ''}><summary>${t('thinking')}</summary><pre>${esc(thinking)}</pre></details>` : ''}
+      ${toolCalls.length ? `<details data-chat-disclosure-key="${esc(toolCallsKey)}" ${toolCallsOpen ? 'open' : ''}><summary>${t('toolCalls')} · ${toolCalls.length}</summary><pre>${esc(JSON.stringify(toolCalls, null, 2))}</pre></details>` : ''}
       ${images.length ? `<small class="muted">${t('images')}: ${images.length}</small>` : ''}
     </div>
   </div>`;
@@ -693,7 +752,7 @@ function compactPath(value) {
 
 async function selectSubagent(taskId) {
   if (!taskId) return;
-  const keepChatOpen = !!state.expandedChatTaskId;
+  const keepChatOpen = conversationPanelEnabled() && !!state.expandedChatTaskId;
   state.selectedSubagentId = taskId;
   state.expandedDetailTaskId = null;
   state.expandedChatTaskId = keepChatOpen ? taskId : null;
@@ -710,11 +769,22 @@ function bindActions() {
       if (action === 'toggleDetails') { state.expandedDetailTaskId = state.expandedDetailTaskId === el.dataset.taskId ? null : el.dataset.taskId; render(); }
       if (action === 'toggleChat') await toggleChatDetails(el.dataset.taskId);
       if (action === 'refreshChat') await loadChatDetails(el.dataset.taskId, { force: true });
+      if (action === 'toggleSettings') { state.settingsOpen = !state.settingsOpen; render(); }
+      if (action === 'toggleConversationPanel') setConversationPanelEnabled(!state.conversationPanelEnabled);
       if (action === 'setLang') setLang(el.dataset.lang);
     });
   });
   bindDetailScrollMemory();
   bindChatScrollMemory();
+  bindChatDisclosureMemory();
+}
+
+function bindChatDisclosureMemory() {
+  root.querySelectorAll('details[data-chat-disclosure-key]').forEach(el => {
+    el.addEventListener('toggle', () => {
+      state.chatDisclosureOpenByKey.set(el.dataset.chatDisclosureKey, el.open === true);
+    });
+  });
 }
 
 function bindDetailScrollMemory() {
@@ -727,10 +797,34 @@ function bindDetailScrollMemory() {
 
 function bindChatScrollMemory() {
   root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
-    el.addEventListener('scroll', () => {
-      state.chatScrollTopByKey.set(el.dataset.chatScrollKey, el.scrollTop || 0);
-    }, { passive: true });
+    const remember = () => rememberChatScroll(el);
+    el.addEventListener('scroll', remember, { passive: true });
+    el.addEventListener('wheel', () => requestAnimationFrame(remember), { passive: true });
+    el.addEventListener('touchmove', () => requestAnimationFrame(remember), { passive: true });
   });
+}
+
+function rememberChatScroll(el) {
+  const key = el?.dataset?.chatScrollKey;
+  if (!key) return;
+  const top = el.scrollTop || 0;
+  const maxTop = Math.max(0, (el.scrollHeight || 0) - (el.clientHeight || 0));
+  state.chatScrollTopByKey.set(key, {
+    top,
+    bottom: Math.max(0, maxTop - top),
+    atBottom: maxTop - top <= 3,
+  });
+}
+
+function applyChatScroll(el) {
+  const saved = state.chatScrollTopByKey.get(el.dataset.chatScrollKey);
+  if (saved == null) return;
+  if (typeof saved === 'number') {
+    el.scrollTop = saved;
+    return;
+  }
+  const maxTop = Math.max(0, (el.scrollHeight || 0) - (el.clientHeight || 0));
+  el.scrollTop = saved.atBottom ? maxTop : Math.min(saved.top || 0, maxTop);
 }
 
 function captureDetailScroll() {
@@ -750,17 +844,31 @@ function restoreDetailScroll() {
 
 function captureChatScroll() {
   if (!root) return;
-  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
-    state.chatScrollTopByKey.set(el.dataset.chatScrollKey, el.scrollTop || 0);
+  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(rememberChatScroll);
+}
+
+function captureChatDisclosureState() {
+  if (!root) return;
+  root.querySelectorAll('details[data-chat-disclosure-key]').forEach(el => {
+    state.chatDisclosureOpenByKey.set(el.dataset.chatDisclosureKey, el.open === true);
   });
 }
 
 function restoreChatScroll() {
   if (!root) return;
-  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
-    const saved = state.chatScrollTopByKey.get(el.dataset.chatScrollKey);
-    if (typeof saved === 'number') el.scrollTop = saved;
+  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(applyChatScroll);
+}
+
+function scheduleChatScrollRestore() {
+  const token = ++state.chatScrollRestoreToken;
+  const restoreIfCurrent = () => {
+    if (token === state.chatScrollRestoreToken) restoreChatScroll();
+  };
+  requestAnimationFrame(() => {
+    restoreIfCurrent();
+    requestAnimationFrame(restoreIfCurrent);
   });
+  setTimeout(restoreIfCurrent, 80);
 }
 
 function tryResize() {
@@ -778,6 +886,10 @@ function tryResize() {
 function formatTokens(n) { n = Number(n || 0); return n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'k' : String(Math.round(n)); }
 function timeAgo(value) { const t0 = new Date(value || 0).getTime(); if (!t0) return t('unknown'); const s = Math.max(0, Math.round((Date.now() - t0)/1000)); if (s < 60) return t('secondsAgo', { n: s }); const m = Math.round(s/60); return m < 60 ? t('minutesAgo', { n: m }) : t('hoursAgo', { n: Math.round(m/60) }); }
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function conversationPanelEnabled() {
+  return state.conversationPanelEnabled === true;
+}
 
 function staleThresholdMs() {
   const minutes = Number(state.snapshot?.config?.staleAfterMinutes);
