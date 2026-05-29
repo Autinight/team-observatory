@@ -6,13 +6,33 @@ import { buildDispatchPrompt, buildTeamSnapshot, diagnoseAgent, readRuntimeConfi
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.dirname(__dirname);
 const ASSETS_DIR = path.join(PLUGIN_ROOT, "assets");
+const ASSET_ALLOWLIST = new Map([
+  ["app.js", "text/javascript; charset=utf-8"],
+  ["api.js", "text/javascript; charset=utf-8"],
+  ["i18n.js", "text/javascript; charset=utf-8"],
+  ["status.js", "text/javascript; charset=utf-8"],
+  ["state.js", "text/javascript; charset=utf-8"],
+  ["avatar.js", "text/javascript; charset=utf-8"],
+  ["render-dashboard.js", "text/javascript; charset=utf-8"],
+  ["render-widget.js", "text/javascript; charset=utf-8"],
+  ["render-chat.js", "text/javascript; charset=utf-8"],
+  ["scroll.js", "text/javascript; charset=utf-8"],
+  ["actions.js", "text/javascript; charset=utf-8"],
+  ["platform.js", "text/javascript; charset=utf-8"],
+  ["utils.js", "text/javascript; charset=utf-8"],
+  ["styles.css", "text/css; charset=utf-8"],
+]);
 
 export default function registerSubagentObservatoryRoutes(app, ctx) {
   app.get("/dashboard", (c) => c.html(renderShell(c, ctx, "dashboard")));
   app.get("/widget", (c) => c.html(renderShell(c, ctx, "widget")));
 
-  app.get("/assets/app.js", (c) => serveAsset(c, "app.js", "text/javascript; charset=utf-8"));
-  app.get("/assets/styles.css", (c) => serveAsset(c, "styles.css", "text/css; charset=utf-8"));
+  app.get("/assets/:fileName", (c) => {
+    const fileName = c.req.param("fileName");
+    const contentType = ASSET_ALLOWLIST.get(fileName);
+    if (!contentType) return c.text("not found", 404);
+    return serveAsset(c, fileName, contentType);
+  });
 
   app.get("/api/snapshot", async (c) => c.json(await buildTeamSnapshot(ctx)));
 
@@ -173,6 +193,7 @@ function clampHistoryLimit(value) {
 }
 
 function serveAsset(c, fileName, contentType) {
+  if (!ASSET_ALLOWLIST.has(fileName)) return c.text("not found", 404);
   const filePath = path.join(ASSETS_DIR, fileName);
   if (!filePath.startsWith(ASSETS_DIR + path.sep)) return c.text("not found", 404);
   if (!fs.existsSync(filePath)) return c.text("not found", 404);

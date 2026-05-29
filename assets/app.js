@@ -1,163 +1,24 @@
+const moduleSearch = new URL(import.meta.url).search;
+const [
+  { createApiClient },
+  { loadLang, saveLang, translate },
+  {
+    canTerminateSubagent: canTerminateByStatus,
+    observedSubagentStatus: observedStatus,
+    staleThresholdMs: resolveStaleThresholdMs,
+    statusLabel: labelStatus,
+    subagentStats: calculateSubagentStats,
+  },
+] = await Promise.all([
+  import(`./api.js${moduleSearch}`),
+  import(`./i18n.js${moduleSearch}`),
+  import(`./status.js${moduleSearch}`),
+]);
+
 const root = document.getElementById('app');
 const surface = root?.dataset.surface || document.body.dataset.surface || 'dashboard';
 
-const LANG_KEY = 'subagent-observatory.lang';
 const CONVERSATION_PANEL_KEY = 'subagent-observatory.conversationPanelEnabled';
-const DEFAULT_LANG = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
-const DEFAULT_STALE_AFTER_MS = 10 * 60 * 1000;
-
-const I18N = {
-  en: {
-    opening: 'Opening observatory...',
-    offlineTitle: 'Observatory offline',
-    retry: 'Retry',
-    eyebrow: 'Subagent Observatory',
-    title: 'Subagent Observatory',
-    subtitle: 'Monitor the state of subagents that exist in currently managed sessions.',
-    running: 'running',
-    refresh: 'Refresh',
-    subagentRuns: 'Subagent Runs',
-    subagentInspector: 'Subagent Inspector',
-    noSubagent: 'No subagent selected.',
-    noSubagents: 'No subagent runs. The backstage is quiet.',
-    noWidgetSubagents: 'No subagent runs in this session.',
-    noCurrentSession: 'No current session.',
-    blackboxSignals: 'Blackbox Signals',
-    agents: 'Agents',
-    agentContext: 'Agent Context',
-    alerts: 'Alerts',
-    quiet: 'No alerts. Subagent runs are quiet.',
-    usagePressure: 'Usage Pressure',
-    last24h: 'last 24h',
-    noUsage: 'No usage records.',
-    observing: 'Observing...',
-    offline: 'Offline',
-    team: 'Subagents',
-    healthScore: 'health',
-    tasks: 'Tasks',
-    subagents: 'subagents',
-    tokens: 'Tokens',
-    total: 'Total',
-    stale: 'Stale',
-    failed: 'Failed',
-    aborted: 'Aborted',
-    canceled: 'Canceled',
-    completed: 'Completed',
-    active: 'Active',
-    requested: 'Requested',
-    executor: 'Executor',
-    status: 'Status',
-    task: 'Task',
-    preview: 'Preview',
-    viewDetails: 'View details',
-    hideDetails: 'Hide details',
-    chatDetails: 'Conversation',
-    hideChat: 'Hide conversation',
-    refreshChat: 'Refresh conversation',
-    loadChat: 'Load conversation',
-    terminateSubagent: 'Terminate subagent',
-    terminatingSubagent: 'Terminating...',
-    conversationPanelSetting: 'Conversation panel',
-    conversationPanelOn: 'On',
-    conversationPanelOff: 'Off',
-    settings: 'Settings',
-    mainConversation: 'Main agent',
-    subagentConversation: 'Subagent',
-    noMessages: 'No messages.',
-    chatUnavailable: 'Chat history unavailable.',
-    thinking: 'Thinking',
-    toolCalls: 'Tool calls',
-    images: 'Images',
-    taskId: 'Task ID',
-    parent: 'Parent',
-    created: 'Created',
-    updated: 'Updated',
-    completedAt: 'Completed',
-    duration: 'Duration',
-    reason: 'Reason',
-    noReason: 'No error reason.',
-    noParent: 'No parent session.',
-    unknown: 'unknown',
-    minutesAgo: '{n}m ago',
-    hoursAgo: '{n}h ago',
-    secondsAgo: '{n}s ago',
-  },
-  zh: {
-    opening: '正在打开观测面板...',
-    offlineTitle: '观测面板离线',
-    retry: '重试',
-    eyebrow: 'Subagent 观测',
-    title: 'Subagent Observatory',
-    subtitle: '监控当前管理的会话中存在的 subagent 的状态。',
-    running: '运行中',
-    refresh: '刷新',
-    subagentRuns: 'Subagent 运行',
-    subagentInspector: 'Subagent 检查器',
-    noSubagent: '未选择 subagent',
-    noSubagents: '暂无 subagent 运行，后台很安静。',
-    noWidgetSubagents: '当前会话暂无 subagent。',
-    noCurrentSession: '没有当前会话。',
-    blackboxSignals: '黑箱信号',
-    agents: 'Agent',
-    agentContext: 'Agent 上下文',
-    alerts: '提醒',
-    quiet: '没有提醒，团队很安静。',
-    usagePressure: '用量压力',
-    last24h: '最近 24 小时',
-    noUsage: '没有用量记录。',
-    observing: '观测中...',
-    offline: '离线',
-    team: 'Subagent',
-    healthScore: '健康分',
-    tasks: '任务',
-    subagents: 'Subagent',
-    tokens: 'Token',
-    total: '总数',
-    stale: '停滞',
-    failed: '失败',
-    aborted: '已终止',
-    canceled: '已取消',
-    completed: '完成',
-    active: '活跃',
-    requested: '请求目标',
-    executor: '执行者',
-    status: '状态',
-    task: '任务',
-    preview: '预览',
-    viewDetails: '查看详情',
-    hideDetails: '收起详情',
-    chatDetails: '对话详情',
-    hideChat: '隐藏对话',
-    refreshChat: '刷新对话',
-    loadChat: '加载对话',
-    terminateSubagent: '终止 subagent',
-    terminatingSubagent: '正在终止...',
-    conversationPanelSetting: '对话面板',
-    conversationPanelOn: '开',
-    conversationPanelOff: '关',
-    settings: '设置',
-    mainConversation: 'Main Agent',
-    subagentConversation: 'Subagent',
-    noMessages: '没有消息。',
-    chatUnavailable: '聊天历史不可用。',
-    thinking: '思考',
-    toolCalls: '工具调用',
-    images: '图片',
-    taskId: '任务 ID',
-    parent: '父会话',
-    created: '创建',
-    updated: '更新',
-    completedAt: '完成',
-    duration: '耗时',
-    reason: '原因',
-    noReason: '没有错误原因。',
-    noParent: '没有父会话。',
-    unknown: '未知',
-    minutesAgo: '{n} 分钟前',
-    hoursAgo: '{n} 小时前',
-    secondsAgo: '{n} 秒前',
-  },
-};
 
 const state = {
   snapshot: null,
@@ -188,15 +49,18 @@ const state = {
   lang: loadLang(),
 };
 
-function loadLang() {
-  const saved = localStorage.getItem(LANG_KEY);
-  return saved === 'zh' || saved === 'en' ? saved : DEFAULT_LANG;
-}
+const {
+  apiUrl,
+  apiJson,
+  pluginPath,
+  agentAvatarUrl,
+  abortTaskLikeChatCard,
+} = createApiClient({ root });
 
 function setLang(lang) {
   if (lang !== 'zh' && lang !== 'en') return;
   state.lang = lang;
-  localStorage.setItem(LANG_KEY, lang);
+  saveLang(lang);
   render();
 }
 
@@ -216,44 +80,7 @@ function setConversationPanelEnabled(enabled) {
 }
 
 function t(key, vars = {}) {
-  const value = I18N[state.lang]?.[key] ?? I18N.en[key] ?? key;
-  return value.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '');
-}
-
-function apiUrl(path) {
-  const current = new URL(window.location.href);
-  const url = new URL(path, current.origin);
-  for (const key of ['token', 'agentId']) {
-    const value = current.searchParams.get(key);
-    if (value) url.searchParams.set(key, value);
-  }
-  return url.toString();
-}
-
-async function apiJson(path, options = {}) {
-  const res = await fetch(apiUrl(path), {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
-  const text = await res.text();
-  let data = null;
-  if (text) {
-    try { data = JSON.parse(text); } catch { data = text; }
-  }
-  if (!res.ok) {
-    const message = typeof data === 'object' && data
-      ? (data.error || data.message || data.result || `${res.status} ${res.statusText}`)
-      : (data || `${res.status} ${res.statusText}`);
-    throw new Error(String(message));
-  }
-  return data;
-}
-
-function pluginPath(path) {
-  return `/api/plugins/${root?.dataset.pluginId || 'team-observatory'}${path}`;
+  return translate(state.lang, key, vars);
 }
 
 async function refresh() {
@@ -718,10 +545,6 @@ function agentAvatar(agent, size = '') {
   </span>`;
 }
 
-function agentAvatarUrl(agentId) {
-  return apiUrl(`/api/agents/${encodeURIComponent(agentId)}/avatar`);
-}
-
 function avatarInitial(agent) {
   const text = String(agent.name || agent.id || '?').trim();
   return Array.from(text)[0]?.toUpperCase?.() || '?';
@@ -740,39 +563,15 @@ function executorDisplayAgent(task) {
 }
 
 function subagentStats(tasks) {
-  const stats = { total: 0, active: 0, stale: 0, failed: 0, completed: 0 };
-  for (const task of tasks || []) {
-    stats.total += 1;
-    const status = observedSubagentStatus(task);
-    if (['running', 'pending', 'blocked', 'recovering'].includes(status)) stats.active += 1;
-    if (status === 'stale') stats.stale += 1;
-    if (['failed', 'aborted', 'canceled'].includes(status)) stats.failed += 1;
-    if (['completed', 'resolved'].includes(status)) stats.completed += 1;
-  }
-  return stats;
+  return calculateSubagentStats(tasks, staleThresholdMs());
 }
 
 function observedSubagentStatus(task) {
-  const status = String(task?.status || 'unknown');
-  if (['running', 'pending', 'blocked', 'recovering'].includes(status) && lastUpdateAgeMs(task) > staleThresholdMs()) {
-    return 'stale';
-  }
-  return status;
-}
-
-function lastUpdateAgeMs(task) {
-  const ts = new Date(task?.updatedAt || task?.createdAt || 0).getTime();
-  return ts ? Date.now() - ts : 0;
+  return observedStatus(task, staleThresholdMs());
 }
 
 function statusLabel(status) {
-  if (status === 'stale') return t('stale');
-  if (status === 'failed') return t('failed');
-  if (status === 'aborted') return t('aborted');
-  if (status === 'canceled') return t('canceled');
-  if (status === 'completed' || status === 'resolved') return t('completed');
-  if (status === 'running') return t('running');
-  return status || t('unknown');
+  return labelStatus(status, t);
 }
 
 function durationLabel(task) {
@@ -800,7 +599,7 @@ async function selectSubagent(taskId) {
 }
 
 function canTerminateSubagent(task) {
-  return ['running', 'pending', 'blocked', 'recovering', 'stale'].includes(observedSubagentStatus(task));
+  return canTerminateByStatus(task, staleThresholdMs());
 }
 
 async function terminateSubagent(taskId) {
@@ -809,7 +608,7 @@ async function terminateSubagent(taskId) {
   state.error = null;
   render();
   try {
-    await apiJson(`/api/task/${encodeURIComponent(taskId)}/abort`, { method: 'POST' });
+    await abortTaskLikeChatCard(taskId);
     markSubagentTerminated(taskId);
     render();
     setTimeout(() => { refresh(); }, 600);
@@ -963,8 +762,7 @@ function conversationPanelEnabled() {
 }
 
 function staleThresholdMs() {
-  const minutes = Number(state.snapshot?.config?.staleAfterMinutes);
-  return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : DEFAULT_STALE_AFTER_MS;
+  return resolveStaleThresholdMs(state.snapshot);
 }
 
 function scheduleRefresh() {
