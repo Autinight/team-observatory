@@ -11,12 +11,16 @@ const [
   },
   { currentSearchParams, getRootElement, getSurface, resizeHostFrame },
   { createInitialState, saveConversationPanelEnabled },
+  { createAvatarHelpers },
+  { createScrollHelpers },
 ] = await Promise.all([
   import(`./api.js${moduleSearch}`),
   import(`./i18n.js${moduleSearch}`),
   import(`./status.js${moduleSearch}`),
   import(`./platform.js${moduleSearch}`),
   import(`./state.js${moduleSearch}`),
+  import(`./avatar.js${moduleSearch}`),
+  import(`./scroll.js${moduleSearch}`),
 ]);
 
 const root = getRootElement();
@@ -31,6 +35,26 @@ const {
   agentAvatarUrl,
   abortTaskLikeChatCard,
 } = createApiClient({ root });
+
+const { avatarInitial, agentAvatar, warmAvatarCache, ensureAvatarCached } = createAvatarHelpers({
+  esc,
+  agentAvatarUrl,
+  getAvatarCache: () => state.avatarCache,
+  getAvatarFetches: () => state.avatarFetches,
+  onAvatarReady: () => render(),
+});
+
+const {
+  bindChatDisclosureMemory,
+  bindDetailScrollMemory,
+  bindChatScrollMemory,
+  captureDetailScroll,
+  restoreDetailScroll,
+  captureChatScroll,
+  captureChatDisclosureState,
+  restoreChatScroll,
+  scheduleChatScrollRestore,
+} = createScrollHelpers(state);
 
 function setLang(lang) {
   if (lang !== 'zh' && lang !== 'en') return;
@@ -94,37 +118,6 @@ async function refresh() {
   }
 }
 
-function warmAvatarCache(snap) {
-  const ids = new Set();
-  for (const agent of snap?.agents || []) {
-    if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
-  }
-  for (const task of snap?.subagents || []) {
-    const requestedAgent = subagentDisplayAgent(task);
-    const executorAgent = executorDisplayAgent(task);
-    for (const agent of [requestedAgent, executorAgent]) {
-      if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
-    }
-  }
-  for (const id of ids) ensureAvatarCached(id);
-}
-
-function ensureAvatarCached(agentId) {
-  if (!agentId || state.avatarCache.has(agentId) || state.avatarFetches.has(agentId)) return;
-  const promise = fetch(agentAvatarUrl(agentId))
-    .then(res => res.ok ? res.blob() : null)
-    .then(blob => {
-      state.avatarCache.set(agentId, blob ? URL.createObjectURL(blob) : null);
-      state.avatarFetches.delete(agentId);
-      render();
-    })
-    .catch(() => {
-      state.avatarCache.set(agentId, null);
-      state.avatarFetches.delete(agentId);
-    });
-  state.avatarFetches.set(agentId, promise);
-}
-
 function connectEvents() {
   try {
     const source = new EventSource(apiUrl(pluginPath('/api/events')));
@@ -137,14 +130,14 @@ function connectEvents() {
 
 function render() {
   if (!root) return;
-  captureDetailScroll();
-  captureChatScroll();
-  captureChatDisclosureState();
+  captureDetailScroll(root);
+  captureChatScroll(root);
+  captureChatDisclosureState(root);
   root.innerHTML = surface === 'widget' ? renderWidget() : renderDashboard();
   bindActions();
-  restoreDetailScroll();
-  restoreChatScroll();
-  scheduleChatScrollRestore();
+  restoreDetailScroll(root);
+  restoreChatScroll(root);
+  scheduleChatScrollRestore(root);
   tryResize();
 }
 
@@ -506,21 +499,6 @@ function kv(label, value) {
   return `<div class="kv"><span>${esc(label)}</span><strong title="${esc(value)}">${esc(value)}</strong></div>`;
 }
 
-function agentAvatar(agent, size = '') {
-  const initial = avatarInitial(agent);
-  const cached = agent.id && state.avatarCache.has(agent.id) ? state.avatarCache.get(agent.id) : undefined;
-  const src = agent.id && agent.id !== 'unknown' ? (cached !== undefined ? cached : agentAvatarUrl(agent.id)) : null;
-  return `<span class="agentAvatar ${size} ${esc(agent.status || '')}" aria-hidden="true">
-    <span class="avatarFallback">${esc(initial)}</span>
-    ${src ? `<img src="${esc(src)}" alt="" loading="eager" decoding="async" onerror="this.remove()">` : ''}
-  </span>`;
-}
-
-function avatarInitial(agent) {
-  const text = String(agent.name || agent.id || '?').trim();
-  return Array.from(text)[0]?.toUpperCase?.() || '?';
-}
-
 function subagentDisplayAgent(task) {
   const id = task.subagentAgentId || task.requestedAgentId || task.agentId || task.executorAgentId || 'unknown';
   const name = task.subagentAgentName || task.requestedAgentName || task.agentName || id;
@@ -615,101 +593,9 @@ function bindActions() {
       if (action === 'setLang') setLang(el.dataset.lang);
     });
   });
-  bindDetailScrollMemory();
-  bindChatScrollMemory();
-  bindChatDisclosureMemory();
-}
-
-function bindChatDisclosureMemory() {
-  root.querySelectorAll('details[data-chat-disclosure-key]').forEach(el => {
-    el.addEventListener('toggle', () => {
-      state.chatDisclosureOpenByKey.set(el.dataset.chatDisclosureKey, el.open === true);
-    });
-  });
-}
-
-function bindDetailScrollMemory() {
-  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
-    el.addEventListener('scroll', () => {
-      state.detailScrollTopByTaskId.set(el.dataset.taskId, el.scrollTop || 0);
-    }, { passive: true });
-  });
-}
-
-function bindChatScrollMemory() {
-  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(el => {
-    const remember = () => rememberChatScroll(el);
-    el.addEventListener('scroll', remember, { passive: true });
-    el.addEventListener('wheel', () => requestAnimationFrame(remember), { passive: true });
-    el.addEventListener('touchmove', () => requestAnimationFrame(remember), { passive: true });
-  });
-}
-
-function rememberChatScroll(el) {
-  const key = el?.dataset?.chatScrollKey;
-  if (!key) return;
-  const top = el.scrollTop || 0;
-  const maxTop = Math.max(0, (el.scrollHeight || 0) - (el.clientHeight || 0));
-  state.chatScrollTopByKey.set(key, {
-    top,
-    bottom: Math.max(0, maxTop - top),
-    atBottom: maxTop - top <= 3,
-  });
-}
-
-function applyChatScroll(el) {
-  const saved = state.chatScrollTopByKey.get(el.dataset.chatScrollKey);
-  if (saved == null) return;
-  if (typeof saved === 'number') {
-    el.scrollTop = saved;
-    return;
-  }
-  const maxTop = Math.max(0, (el.scrollHeight || 0) - (el.clientHeight || 0));
-  el.scrollTop = saved.atBottom ? maxTop : Math.min(saved.top || 0, maxTop);
-}
-
-function captureDetailScroll() {
-  if (!root) return;
-  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
-    state.detailScrollTopByTaskId.set(el.dataset.taskId, el.scrollTop || 0);
-  });
-}
-
-function restoreDetailScroll() {
-  if (!root) return;
-  root.querySelectorAll('.detailText[data-task-id]').forEach(el => {
-    const saved = state.detailScrollTopByTaskId.get(el.dataset.taskId);
-    if (typeof saved === 'number') el.scrollTop = saved;
-  });
-}
-
-function captureChatScroll() {
-  if (!root) return;
-  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(rememberChatScroll);
-}
-
-function captureChatDisclosureState() {
-  if (!root) return;
-  root.querySelectorAll('details[data-chat-disclosure-key]').forEach(el => {
-    state.chatDisclosureOpenByKey.set(el.dataset.chatDisclosureKey, el.open === true);
-  });
-}
-
-function restoreChatScroll() {
-  if (!root) return;
-  root.querySelectorAll('.chatMessageList[data-chat-scroll-key]').forEach(applyChatScroll);
-}
-
-function scheduleChatScrollRestore() {
-  const token = ++state.chatScrollRestoreToken;
-  const restoreIfCurrent = () => {
-    if (token === state.chatScrollRestoreToken) restoreChatScroll();
-  };
-  requestAnimationFrame(() => {
-    restoreIfCurrent();
-    requestAnimationFrame(restoreIfCurrent);
-  });
-  setTimeout(restoreIfCurrent, 80);
+  bindDetailScrollMemory(root);
+  bindChatScrollMemory(root);
+  bindChatDisclosureMemory(root);
 }
 
 function tryResize() {
