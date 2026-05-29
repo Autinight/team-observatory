@@ -51,5 +51,6 @@ assert.equal(observedStatus({ status: "running", updatedAt: "2026-05-29T00:09:59
 assert.equal(observedStatus({ status: "paused", createdAt: "2026-05-29T00:00:00.000Z" }, { now, staleAfterMs: 10 * 60 * 1000 }), "stale");
 assert.equal(observedStatus({ status: "success", updatedAt: "2026-05-29T00:00:00.000Z" }, { now, staleAfterMs: 10 * 60 * 1000 }), "completed");
 assert.equal(observedStatus({ status: "cancelled", updatedAt: "2026-05-29T00:00:00.000Z" }, { now, staleAfterMs: 10 * 60 * 1000 }), "canceled");
+assert.equal(observedStatus(null, { now, staleAfterMs: 10 * 60 * 1000 }), "unknown");
 
 console.log("status semantics ok");
