@@ -1,4 +1,5 @@
-import { buildDispatchPrompt, readRuntimeConfig } from "../lib/team-snapshot.js";
+import { readRuntimeConfig } from "../lib/team-snapshot.js";
+import { buildDispatchPrompt } from "../lib/dispatch-prompt.js";
 
 export const name = "dispatch_review";
 export const description = "Build a structured prompt for the current Hana agent to dispatch a subagent reviewer for subagent/task diagnosis. This tool does not directly start subagents; it returns the prompt and can send it into the current session when sessionPath is available.";

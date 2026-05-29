@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildDispatchPrompt, buildTeamSnapshot, diagnoseAgent, readRuntimeConfig, safeBusRequest } from "../lib/team-snapshot.js";
+import { buildTeamSnapshot, readRuntimeConfig, safeBusRequest } from "../lib/team-snapshot.js";
+import { diagnoseAgent } from "../lib/diagnose.js";
+import { buildDispatchPrompt } from "../lib/dispatch-prompt.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.dirname(__dirname);
