@@ -223,8 +223,11 @@ function warmAvatarCache(snap) {
     if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
   }
   for (const task of snap?.subagents || []) {
-    const agent = subagentDisplayAgent(task);
-    if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
+    const requestedAgent = subagentDisplayAgent(task);
+    const executorAgent = executorDisplayAgent(task);
+    for (const agent of [requestedAgent, executorAgent]) {
+      if (agent.id && agent.id !== 'unknown') ids.add(agent.id);
+    }
   }
   for (const id of ids) ensureAvatarCached(id);
 }
@@ -411,15 +414,16 @@ function subagentCard(task) {
 
 function renderSubagentInspector(task) {
   if (!task) return `<div class="inspectorEmpty"><h2>${t('subagentInspector')}</h2><p class="muted">${t('noSubagent')}</p></div>`;
-  const agent = subagentDisplayAgent(task);
+  const requestedAgent = subagentDisplayAgent(task);
+  const executorAgent = executorDisplayAgent(task);
   const observed = observedSubagentStatus(task);
   const title = task.summary || task.taskId;
   return `
     <div class="inspectorHead">
-      ${agentAvatar(agent, 'big')}
+      ${agentAvatar(requestedAgent, 'big')}
       <div>
         <h2>${t('subagentInspector')}</h2>
-        <p>${esc(agent.name || agent.id)} · ${esc(statusLabel(observed))}</p>
+        <p>${esc(requestedAgent.name || requestedAgent.id)} · ${esc(statusLabel(observed))}</p>
       </div>
     </div>
     ${detailPreview(task, title)}
@@ -429,8 +433,8 @@ function renderSubagentInspector(task) {
       ${task.completedAt ? timelineRow(t('completedAt'), task.completedAt) : ''}
     </div>
     <div class="kvList">
-      ${kv(t('executor'), agent.name || agent.id)}
-      ${kv(t('requested'), task.requestedAgentName || task.requestedAgentId || t('unknown'))}
+      ${kv(t('executor'), executorAgent.name || executorAgent.id || t('unknown'))}
+      ${kv(t('requested'), requestedAgent.name || requestedAgent.id || t('unknown'))}
       ${kv(t('status'), statusLabel(observed))}
       ${kv(t('duration'), durationLabel(task))}
       ${kv(t('parent'), task.parentSessionTitle || compactPath(task.parentSessionPath) || t('noParent'))}
@@ -481,8 +485,14 @@ function avatarInitial(agent) {
 }
 
 function subagentDisplayAgent(task) {
-  const id = task.executorAgentId || task.requestedAgentId || task.agentId || 'unknown';
-  const name = task.executorAgentName || task.requestedAgentName || id;
+  const id = task.subagentAgentId || task.requestedAgentId || task.agentId || task.executorAgentId || 'unknown';
+  const name = task.subagentAgentName || task.requestedAgentName || task.agentName || id;
+  return { id, name, status: observedSubagentStatus(task) };
+}
+
+function executorDisplayAgent(task) {
+  const id = task.dispatchingAgentId || task.executorAgentId || 'unknown';
+  const name = task.dispatchingAgentName || task.executorAgentName || id;
   return { id, name, status: observedSubagentStatus(task) };
 }
 
