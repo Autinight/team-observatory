@@ -66,7 +66,7 @@ const {
   scheduleChatScrollRestore,
 } = createScrollHelpers(state);
 
-const { bindActions } = createActions({
+const { bindRootActions } = createActions({
   root,
   state,
   refresh,
@@ -77,10 +77,9 @@ const { bindActions } = createActions({
   terminateSubagent,
   setConversationPanelEnabled,
   setLang,
-  bindDetailScrollMemory,
-  bindChatScrollMemory,
-  bindChatDisclosureMemory,
 });
+
+bindRootActions();
 
 function setLang(lang) {
   if (lang !== 'zh' && lang !== 'en') return;
@@ -156,7 +155,9 @@ function render() {
   captureChatScroll(root);
   captureChatDisclosureState(root);
   root.innerHTML = surface === 'widget' ? renderWidget() : renderDashboard();
-  bindActions();
+  bindDetailScrollMemory(root);
+  bindChatScrollMemory(root);
+  bindChatDisclosureMemory(root);
   restoreDetailScroll(root);
   restoreChatScroll(root);
   scheduleChatScrollRestore(root);
