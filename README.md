@@ -17,12 +17,7 @@ It shows:
 
 ## Tools
 
-The plugin id remains `team-observatory` for compatibility with existing installations, so Hana exposes:
-
-- `team-observatory_diagnose_agent`
-- `team-observatory_dispatch_review`
-
-The plugin does not directly create or control subagents. It observes existing subagent runs and may build a dispatch prompt when the optional diagnostic tool is used.
+This plugin is UI-only. It observes existing subagent runs and does not expose Agent-callable tools.
 
 ## Architecture
 

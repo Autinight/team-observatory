@@ -6,8 +6,8 @@
   "description": "A visual observatory for subagent runs across currently managed Hana sessions.",
   "minAppVersion": "0.158.0",
   "trust": "full-access",
-  "permissions": ["usage.read", "task.read", "task.control", "session.read", "session.write"],
-  "activationEvents": ["onStartup", "onPageOpen", "onWidgetOpen", "onToolCall:diagnose_agent", "onToolCall:dispatch_review"],
+  "permissions": ["usage.read", "task.read", "task.control", "session.read"],
+  "activationEvents": ["onStartup", "onPageOpen", "onWidgetOpen"],
   "ui": {
     "hostCapabilities": ["clipboard.writeText"]
   },
@@ -41,24 +41,12 @@
           "type": "boolean",
           "title": "Enable live event stream",
           "default": true
-        },
-        "enableAgentDispatch": {
-          "type": "boolean",
-          "title": "Allow dispatch prompts into current session",
-          "default": true
         }
       }
     }
   },
   "dev": {
     "scenarios": [
-      {
-        "id": "diagnose-tool",
-        "steps": [
-          { "invokeTool": { "name": "diagnose_agent", "input": { "agentId": "current" } } },
-          { "expectToolText": "Subagent Observatory" }
-        ]
-      },
       {
         "id": "open-dashboard",
         "steps": [

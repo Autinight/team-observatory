@@ -1,7 +1,5 @@
 // routes/api.js — route wiring (thin orchestrator).
-import { buildTeamSnapshot, readRuntimeConfig, safeBusRequest } from "../lib/team-snapshot.js";
-import { diagnoseAgent } from "../lib/diagnose.js";
-import { buildDispatchPrompt } from "../lib/dispatch-prompt.js";
+import { buildTeamSnapshot, safeBusRequest } from "../lib/team-snapshot.js";
 import { renderShell } from "./shell.js";
 import { ASSET_ALLOWLIST, serveAsset } from "./assets.js";
 import { handleEvents } from "./events.js";
@@ -48,35 +46,6 @@ export default function registerSubagentObservatoryRoutes(app, ctx) {
     const type = c.req.query("type") || undefined;
     const tasks = await safeBusRequest(ctx, "task:list", type ? { type } : {}, []);
     return c.json(Array.isArray(tasks) ? tasks : []);
-  });
-
-  // actions
-  app.post("/api/actions/diagnose", async (c) => {
-    const input = await c.req.json().catch(() => ({}));
-    return c.json(await diagnoseAgent(ctx, input));
-  });
-
-  app.post("/api/actions/dispatch-review", async (c) => {
-    const input = await c.req.json().catch(() => ({}));
-    const config = readRuntimeConfig(ctx);
-    const result = await buildDispatchPrompt(ctx, input);
-    const sessionPath = typeof input.sessionPath === "string" && input.sessionPath.trim()
-      ? input.sessionPath.trim()
-      : null;
-
-    if (!config.enableAgentDispatch) {
-      return c.json({ ...result, sent: false, reason: "agent dispatch is disabled in plugin config" });
-    }
-    if (!sessionPath) {
-      return c.json({ ...result, sent: false, reason: "sessionPath was not provided; copy the prompt manually" });
-    }
-
-    const sendResult = await safeBusRequest(ctx, "session:send", {
-      sessionPath,
-      text: result.prompt,
-    }, { accepted: false, error: "session:send unavailable" });
-
-    return c.json({ ...result, sent: !!sendResult?.accepted, sendResult });
   });
 
   // events
