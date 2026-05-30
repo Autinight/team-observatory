@@ -2,14 +2,9 @@ export default class SubagentObservatoryPlugin {
   async onload() {
     const ctx = this.ctx;
     const runtime = {
-      startedAt: Date.now(),
       dirtyAt: Date.now(),
       lastEvent: null,
       subscribers: new Set(),
-      stats: {
-        eventCount: 0,
-        snapshotCount: 0,
-      },
     };
 
     ctx._teamObservatory = runtime;
@@ -17,7 +12,6 @@ export default class SubagentObservatoryPlugin {
     if (ctx?.bus && typeof ctx.bus.subscribe === "function") {
       const off = ctx.bus.subscribe((event, sessionPath) => {
         if (!isRelevantEvent(event)) return;
-        runtime.stats.eventCount += 1;
         runtime.dirtyAt = Date.now();
         runtime.lastEvent = sanitizeEvent(event, sessionPath);
         broadcast(runtime, {
