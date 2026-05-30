@@ -46,6 +46,9 @@ assert.equal(isArchivedSessionPath("/sessions/active/foo"), false);
   const run = { parentSessionPath: parent };
   assert.equal(isVisibleSubagentRun(run), true);
 
+  // visible when copied path separators differ from the host platform
+  assert.equal(isVisibleSubagentRun({ parentSessionPath: parent.replace(/\//g, "\\") }), true);
+
   // invisible when parent doesn't exist
   assert.equal(isVisibleSubagentRun({ parentSessionPath: "/nonexistent/path.jsonl" }), false);
 

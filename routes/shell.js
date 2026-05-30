@@ -17,6 +17,7 @@ export function renderShell(c, ctx, surface) {
 </head>
 <body data-surface="${escapeAttr(surface)}" data-hana-theme="${escapeAttr(theme)}">
   <div id="app" data-plugin-id="${escapeAttr(ctx.pluginId)}" data-surface="${escapeAttr(surface)}"></div>
+  <script>(function(){window.parent.postMessage({source:"hana-plugin",type:"ready"},"*")})();</script>
   <script type="module" src="${escapeAttr(jsSrc)}"></script>
 </body>
 </html>`;
@@ -24,7 +25,7 @@ export function renderShell(c, ctx, surface) {
 
 export function assetUrl(c, ctx, subPath) {
   const url = new URL(`/api/plugins/${ctx.pluginId}${subPath}`, new URL(c.req.url).origin);
-  for (const key of ["token", "agentId", "hana-theme"]) {
+  for (const key of ["token", "agentId", "sessionPath", "hana-theme"]) {
     const value = c.req.query(key);
     if (value) url.searchParams.set(key, value);
   }

@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "team-observatory",
   "name": "Subagent Observatory",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A visual observatory for subagent runs across currently managed Hana sessions.",
   "minAppVersion": "0.158.0",
   "trust": "full-access",

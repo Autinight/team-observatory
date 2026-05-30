@@ -16,7 +16,8 @@ assert.equal(textOrNull({ key: "val" }), '{"key":"val"}');
 
 // pathKey
 assert.ok(pathKey("/foo/bar") !== pathKey("/foo/baz"));
-assert.ok(pathKey("C:\\Users\\Test") === pathKey("c:\\users\\test"));  // case-insensitive on Windows
+assert.ok(pathKey("C:/Users/Test") === pathKey("c:/users/test"));  // case-insensitive across platforms
+assert.ok(pathKey("C:\\Users\\Test") === pathKey("C:/Users/Test"));  // slash-insensitive for copied paths
 
 // inferAgentIdFromSessionPath
 assert.equal(inferAgentIdFromSessionPath("/path/to/agents/shiraha/sessions/x.jsonl"), "shiraha");

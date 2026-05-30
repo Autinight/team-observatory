@@ -26,8 +26,9 @@ export const ASSET_ALLOWLIST = new Map([
 
 export function serveAsset(c, fileName, contentType) {
   if (!ASSET_ALLOWLIST.has(fileName)) return c.text("not found", 404);
-  const filePath = path.join(ASSETS_DIR, fileName);
-  if (!filePath.startsWith(ASSETS_DIR + path.sep)) return c.text("not found", 404);
+  const filePath = path.resolve(ASSETS_DIR, fileName);
+  const assetRoot = path.resolve(ASSETS_DIR);
+  if (filePath !== assetRoot && !filePath.startsWith(assetRoot + path.sep)) return c.text("not found", 404);
   if (!fs.existsSync(filePath)) return c.text("not found", 404);
   c.header("Content-Type", contentType);
   c.header("Cache-Control", "no-store");
