@@ -21,7 +21,15 @@ export default function registerSubagentObservatoryRoutes(app, ctx) {
   });
 
   // snapshot
-  app.get("/api/snapshot", async (c) => c.json(await buildTeamSnapshot(ctx)));
+  app.get("/api/snapshot", async (c) => {
+    try {
+      return c.json(await buildTeamSnapshot(ctx));
+    } catch (err) {
+      const message = err?.message || String(err);
+      ctx?.log?.error?.("Subagent Observatory snapshot failed", message);
+      return c.json({ error: message, code: "snapshot_failed" }, 500);
+    }
+  });
 
   // chat
   app.get("/api/subagent-chat", (c) => handleSubagentChat(c, ctx));

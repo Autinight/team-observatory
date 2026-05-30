@@ -1,10 +1,22 @@
-export function createApiClient({ root, getCurrentHref = () => window.location.href } = {}) {
+export function createApiClient({ root, getCurrentHref = () => window.location.href, authSearch = '' } = {}) {
+  function sourceSearchParams() {
+    const params = [];
+    for (const source of [authSearch, new URL(getCurrentHref()).search]) {
+      const text = String(source || '');
+      if (!text) continue;
+      params.push(new URLSearchParams(text.startsWith('?') ? text.slice(1) : text));
+    }
+    return params;
+  }
+
   function apiUrl(path) {
     const current = new URL(getCurrentHref());
     const url = new URL(path, current.origin);
-    for (const key of ['token', 'agentId']) {
-      const value = current.searchParams.get(key);
-      if (value) url.searchParams.set(key, value);
+    for (const params of sourceSearchParams()) {
+      for (const key of ['token', 'agentId', 'sessionPath', 'hana-theme']) {
+        const value = params.get(key);
+        if (value && !url.searchParams.has(key)) url.searchParams.set(key, value);
+      }
     }
     return url.toString();
   }

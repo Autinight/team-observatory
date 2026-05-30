@@ -38,7 +38,7 @@ const {
   pluginPath,
   agentAvatarUrl,
   abortTaskLikeChatCard,
-} = createApiClient({ root });
+} = createApiClient({ root, authSearch: moduleSearch });
 
 function t(key, vars = {}) {
   return translate(state.lang, key, vars);

@@ -14,19 +14,24 @@ export default class SubagentObservatoryPlugin {
 
     ctx._teamObservatory = runtime;
 
-    const off = ctx.bus.subscribe((event, sessionPath) => {
-      if (!isRelevantEvent(event)) return;
-      runtime.stats.eventCount += 1;
-      runtime.dirtyAt = Date.now();
-      runtime.lastEvent = sanitizeEvent(event, sessionPath);
-      broadcast(runtime, {
-        type: "dirty",
-        ts: runtime.dirtyAt,
-        event: runtime.lastEvent,
+    if (ctx?.bus && typeof ctx.bus.subscribe === "function") {
+      const off = ctx.bus.subscribe((event, sessionPath) => {
+        if (!isRelevantEvent(event)) return;
+        runtime.stats.eventCount += 1;
+        runtime.dirtyAt = Date.now();
+        runtime.lastEvent = sanitizeEvent(event, sessionPath);
+        broadcast(runtime, {
+          type: "dirty",
+          ts: runtime.dirtyAt,
+          event: runtime.lastEvent,
+        });
       });
-    });
 
-    this.register(off);
+      if (typeof off === "function") this.register(off);
+    } else {
+      ctx.log?.warn?.("Subagent Observatory event subscription unavailable; polling only");
+    }
+
     this.register(() => {
       for (const send of runtime.subscribers) {
         try { send({ type: "closed", ts: Date.now() }); } catch {}
