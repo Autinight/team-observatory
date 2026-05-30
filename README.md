@@ -25,7 +25,7 @@ This plugin is UI-only. It observes existing subagent runs and does not expose A
 iframe page/widget
   -> /api/plugins/team-observatory/api/snapshot
   -> plugin route
-  -> ctx.bus.request(agent:list/session:list/task:list/usage:list)
+  -> ctx.bus.request(agent:list/session:list/task:list)
   -> subagent-runs.json history
 ```
 

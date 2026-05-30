@@ -32,15 +32,6 @@ export default function registerSubagentObservatoryRoutes(app, ctx) {
   // chat
   app.get("/api/subagent-chat", (c) => handleSubagentChat(c, ctx));
 
-  // agent detail
-  app.get("/api/agents/:id", async (c) => {
-    const snapshot = await buildTeamSnapshot(ctx);
-    const id = c.req.param("id");
-    const agent = snapshot.agents.find((item) => item.id === id || item.name === id);
-    if (!agent) return c.json({ error: "agent not found" }, 404);
-    return c.json({ agent, snapshotTs: snapshot.ts });
-  });
-
   // raw task list (passthrough to Hana core)
   app.get("/api/tasks", async (c) => {
     const type = c.req.query("type") || undefined;

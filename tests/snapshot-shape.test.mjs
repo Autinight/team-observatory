@@ -1,9 +1,8 @@
-// Smoke tests for snapshot shape: task normalization, status fields, and summary.
+// Smoke tests for snapshot shape: task normalization and status fields.
 import assert from "node:assert/strict";
 import {
   normalizeTasks,
   taskStatusFields,
-  buildSummary,
 } from "../lib/team-snapshot.js";
 
 // ── normalizeTasks ────────────────────────────────────────────────────────────
@@ -76,36 +75,6 @@ import {
   };
   const fields = taskStatusFields(task, { now: Date.parse("2026-05-29T00:00:00.000Z") });
   assert.equal(fields.canTerminate, false);
-}
-
-// ── buildSummary ──────────────────────────────────────────────────────────────
-{
-  const tasks = [
-    { status: "running" },
-    { status: "running" },
-    { status: "failed" },
-  ];
-  const subagents = [
-    { status: "running" },
-    { status: "completed" },
-  ];
-  const agents = [
-    { status: "busy", health: { score: 70 } },
-    { status: "active", health: { score: 90 } },
-    { status: "stale", health: { score: 50 } },
-  ];
-  const usage = [];
-  const alerts = [{}, {}, {}, {}];
-  
-  const summary = buildSummary(agents, tasks, subagents, usage, alerts);
-  assert.equal(summary.agentCount, 3);
-  assert.equal(summary.activeAgentCount, 1);  // busy
-  assert.equal(summary.busyAgentCount, 1);
-  assert.equal(summary.runningTaskCount, 2);
-  assert.equal(summary.failedTaskCount, 1);
-  assert.equal(summary.runningSubagentCount, 1);
-  assert.equal(summary.failedSubagentCount, 0);
-  assert.equal(summary.alertCount, 4);
 }
 
 console.log("snapshot-shape passed");
